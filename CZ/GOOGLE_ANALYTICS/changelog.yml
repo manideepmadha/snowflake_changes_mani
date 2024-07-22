@@ -1,0 +1,3 @@
+changes:
+  - file_path: CZ/GOOGLE_ANALYTICS/GA_INSERT_20240722.sql
+    description: INSERT Property table for column col with value

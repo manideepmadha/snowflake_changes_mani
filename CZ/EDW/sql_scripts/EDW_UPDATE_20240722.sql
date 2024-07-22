@@ -1,0 +1,1 @@
+update table EDW.PROPERTY set col = "123" where col2 = 123;
