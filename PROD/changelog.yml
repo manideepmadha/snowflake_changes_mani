@@ -1,9 +1,9 @@
 changes:
-  - file_path: PROD/EDW_UPDATE_20240722.sql
+  - file_path: PROD/sql_scripts/PROD_CZ_EDW_20240722.sql
     description: UPDATE Property table for column col with value
-  - file_path: PROD/GA_INSERT_20240722.sql
+  - file_path: PROD/sql_scripts/PROD_CZ_GOOGLE_ANALYTICS_20240722.sql
     description: UPDATE Property table for column col with value
-  - file_path: PROD/EDW_INSERT_20240723.sql
+  - file_path: PROD/sql_scripts/PROD_CZ_EDW_20240723.sql
     description: INSERT values into property table
-  - file_path: PROD/EDW_COPY_20240723.sql
+  - file_path: PROD/sql_scripts/PROD_CZ_EDW_20240724.sql
     description: COPY values into property table
