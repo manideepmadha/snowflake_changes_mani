@@ -1,0 +1,9 @@
+changes:
+  - file_path: PROD/EDW_UPDATE_20240722.sql
+    description: UPDATE Property table for column col with value
+  - file_path: PROD/GA_INSERT_20240722.sql
+    description: UPDATE Property table for column col with value
+  - file_path: PROD/EDW_INSERT_20240723.sql
+    description: INSERT values into property table
+  - file_path: PROD/EDW_COPY_20240723.sql
+    description: COPY values into property table
