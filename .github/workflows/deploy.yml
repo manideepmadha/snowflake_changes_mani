@@ -1,11 +1,12 @@
-name: Run Snowflake SQL Scripts
+name: CHANGE REQUEST WORKFLOW
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '**/changelog.yml'
-      - '**/sql_scripts/**'
+  workflow_dispatch: # Manual trigger
+    inputs:
+      ServiceNow CR:
+        required: true
+        type: string
+        description: 'ServiceNow Change Request Number'
 
 jobs:
   run_scripts:
