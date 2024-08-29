@@ -1,0 +1,84 @@
+{
+    "role": [
+        {
+            "grantee_type": "DATABASE ROLE",
+            "database_name": "DEV_TZ",
+            "grantee_name": "DEV_TZ_READ_ONLY",
+            "enforcement_action": "ENFORCE",
+            "grantees": [
+                {
+                    "type": "database",
+                    "name": "DEV_TZ", 
+                    "privileges": ["USAGE - FUTURE SCHEMA", "SELECT - FUTURE TABLE"]
+                },
+                {
+                    "type": "schema",
+                    "name": ["all"], 
+                    "privileges": ["usage"]
+                },
+                {
+                    "type": "table",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["SELECT"]
+                },
+                {
+                    "type": "VIEW",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["SELECT"]
+                }
+            ]
+        },
+        {
+            "grantee_type": "DATABASE ROLE",
+            "database_name": "DEV_TZ",
+            "grantee_name": "DEV_TZ_WRITE_ACCESS",
+            "enforcement_action": "ENFORCE",
+            "grantees": [
+                {
+                    "type": "schema",
+                    "name": ["all"], 
+                    "privileges": ["usage"]
+                },
+                {
+                    "type": "table",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["SELECT", "INSERT", "UPDATE", "DELETE"]
+                },
+                {
+                    "type": "VIEW",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["SELECT", "UPDATE", "INSERT", "DELETE"]
+                }
+            ]
+        },
+        {
+            "grantee_type": "DATABASE ROLE",
+            "database_name": "DEV_TZ",
+            "grantee_name": "DEV_TZ_DDL_ACCESS",
+            "enforcement_action": "ENFORCE",
+            "grantees": [
+                {
+                    "type": "schema",
+                    "name": ["all"], 
+                    "privileges": ["usage"]
+                },
+                {
+                    "type": "table",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["SELECT", "TRUNCATE", "EVOLVE SCHEMA", "OPERATE"]
+                },
+                {
+                    "type": "VIEW",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["SELECT", "TRUNCATE", "EVOLVE SCHEMA"]
+                }
+            ]
+        }
+    ]
+}

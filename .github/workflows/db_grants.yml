@@ -1,0 +1,35 @@
+name: Process JSON Changes
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  process_json:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: py -3.12 -m pip install snowflake-connector-python
+
+      - name: Get list of changed JSON files in the last merged PR
+        id: get_json_files
+        run: |
+          LATEST_MERGE_COMMIT=$(git log --merges -1 --pretty=format:%H)
+          CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r $LATEST_MERGE_COMMIT -- role_grants/CHANGES/*.json)
+          echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
+
+      - name: Run Python script with changed JSON files
+        run: |
+          if [ -z "${{ env.changed_files }}" ]; then
+            echo "No JSON files changed."
+          else
+            python role_grants/scripts/database_role_creation.py ${{ env.changed_files }} "manideepmadha" "Mani@snowflake1432" "WWBDJZS-LH04829"
+          fi
