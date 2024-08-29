@@ -23,7 +23,7 @@ jobs:
         id: get_json_files
         run: |
           LATEST_MERGE_COMMIT=$(git log --merges -1 --pretty=format:%H)
-          CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r $LATEST_MERGE_COMMIT -- role_grants/CHANGES/*.json)
+          CHANGED_FILES=$(git diff-tree --no-commit-id --name-only $LATEST_MERGE_COMMIT -- role_grants/CHANGES/*.json)
           echo "changed_files=$CHANGED_FILES" >> $GITHUB_ENV
 
       - name: Run Python script with changed JSON files
