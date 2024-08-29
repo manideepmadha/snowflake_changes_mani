@@ -55,6 +55,7 @@
                 }
             ]
         },
+        
         {
             "grantee_type": "DATABASE ROLE",
             "database_name": "DEV_TZ",
