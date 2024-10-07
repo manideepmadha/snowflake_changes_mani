@@ -1,0 +1,25 @@
+{
+    "warehouses": [
+        {
+            "warehouse_name": "ED_XS_WAREHOUSE",
+            "warehouse_size": "XSMALL",
+            "initially_suspended": true,
+            "max_cluster_count": 10,
+            "min_cluster_count": 1,
+            "auto_suspend": 120,
+            "scaling_policy": "ECONOMY",
+            "comment": "This is a extra small warehouse used by the ED team"
+        },
+        
+        {
+            "warehouse_name": "ED_S_WAREHOUSE",
+            "warehouse_size": "MEDIUM",
+            "initially_suspended": true,
+            "max_cluster_count": 10,
+            "min_cluster_count": 1,
+            "auto_suspend": 120,
+            "scaling_policy": "ECONOMY",
+            "comment": "This is a small warehouse used by the ED team"
+        }
+    ]
+}
