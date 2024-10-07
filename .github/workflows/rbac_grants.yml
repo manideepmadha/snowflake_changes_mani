@@ -16,11 +16,11 @@ jobs:
     - name: Get latest PR
       id: latest_pr
       run: |
-        PR=$(gh pr list --state open --sort created --json number --jq '.[0].number')
+        PR=$(gh pr list --state open --json number --jq '.[0].number')
         echo "Latest PR: $PR"
         echo "pr_number=$PR" >> $GITHUB_ENV
 
-    # Get the latest changed JSON file in the specified folder
+    # Get the latest changed JSON file in db_roles_permissions_config folder
     - name: Get latest changed JSON file in db_roles_permissions_config folder
       id: get_json_file
       run: |
