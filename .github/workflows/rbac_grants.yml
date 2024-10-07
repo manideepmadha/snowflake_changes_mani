@@ -8,23 +8,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout the code
+    # Checkout the code with full history to detect file changes
     - name: Checkout repository
       uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Full history to ensure proper diff detection
 
-    # Get the latest PR
-    - name: Get latest PR
-      id: latest_pr
+    # Get the latest PR number from the GitHub context (if running on a PR)
+    - name: Get PR number
+      id: pr_info
       run: |
-        PR=$(gh pr list --state open --json number --jq '.[0].number')
-        echo "Latest PR: $PR"
-        echo "pr_number=$PR" >> $GITHUB_ENV
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          echo "PR Number: ${{ github.event.pull_request.number }}"
+          echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+        else
+          echo "This workflow wasn't triggered by a PR."
+        fi
 
-    # Get the latest changed JSON file in db_roles_permissions_config folder
-    - name: Get latest changed JSON file in db_roles_permissions_config folder
+    # Find the latest changed JSON file in db_roles_permissions_config folder
+    - name: Find latest changed JSON file in db_roles_permissions_config folder
       id: get_json_file
       run: |
-        FILE=$(gh pr diff ${{ env.pr_number }} --name-only | grep -E '^repo/rbac/db_roles_permissions_config/.*\.json$' | tail -n 1)
+        # Find changes in db_roles_permissions_config folder for the latest PR
+        FILE=$(git diff --name-only origin/main HEAD | grep -E '^repo/rbac/db_roles_permissions_config/.*\.json$' | tail -n 1)
         echo "JSON File: $FILE"
         if [ -z "$FILE" ]; then
           echo "No JSON file changes detected in db_roles_permissions_config folder."
