@@ -1,10 +1,10 @@
-name: Trigger Latest PR and Process JSON
+name: RBAC_WORKFLOW
 
 on:
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
-  process-json:
+  db_roles_permissions:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,17 +15,116 @@ jobs:
           fetch-depth: 0  # Full history to ensure proper diff detection
 
       # Find the latest changed JSON file in the db_roles_permissions_config folder
-      - name: Find latest changed JSON file in db_roles_permissions_config folder
+      - name: Find latest changed JSON file in db_roles_permissions_config_folder
         id: get_json_file
         run: |
           latest_commit=$(git log -1 --pretty=format:%H)
           changed_files=$(git diff-tree --no-commit-id --name-only -r $latest_commit)
 
           # Filter JSON files in the specified folder
-          filtered_files=$(echo "$changed_files" | grep "rbac/db_roles_permissions_config" | grep ".json" || true)
+          filtered_files=$(echo "$changed_files" | grep "rbac/db_roles_permissions_config_folder" | grep ".json" || true)
 
           if [ -z "$filtered_files" ]; then
-            echo "No JSON file changes detected in db_roles_permissions_config folder."
+            echo "No JSON file changes detected in db_roles_permissions_config_folder."
+            echo "json_file=" >> $GITHUB_ENV
+          else
+            echo "JSON file found: $filtered_files"
+            echo "json_file=$filtered_files" >> $GITHUB_ENV
+          fi
+      # Proceed only if a JSON file was found (skip steps if no JSON file was found)
+      - name: Run Pipeline script if JSON file is found
+        if: ${{ env.json_file != '' }}
+        run: |
+          echo "The JSON file is: ${{ env.json_file }}"
+  warehouse_creation:
+    needs: db_roles_permissions
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code with full history to detect file changes
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Full history to ensure proper diff detection
+
+      # Find the latest changed JSON file in the db_roles_permissions_config folder
+      - name: Find latest changed JSON file in warehouse_creation_config_folder
+        id: get_json_file
+        run: |
+          latest_commit=$(git log -1 --pretty=format:%H)
+          changed_files=$(git diff-tree --no-commit-id --name-only -r $latest_commit)
+
+          # Filter JSON files in the specified folder
+          filtered_files=$(echo "$changed_files" | grep "rbac/warehouse_creation_config_folder" | grep ".json" || true)
+
+          if [ -z "$filtered_files" ]; then
+            echo "No JSON file changes detected in warehouse_creation_config_folder."
+            echo "json_file=" >> $GITHUB_ENV
+          else
+            echo "JSON file found: $filtered_files"
+            echo "json_file=$filtered_files" >> $GITHUB_ENV
+          fi
+      # Proceed only if a JSON file was found (skip steps if no JSON file was found)
+      - name: Run Pipeline script if JSON file is found
+        if: ${{ env.json_file != '' }}
+        run: |
+          echo "The JSON file is: ${{ env.json_file }}"
+  funcational_roles_creation:
+    needs: warehouse_creation
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code with full history to detect file changes
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Full history to ensure proper diff detection
+
+      # Find the latest changed JSON file in the db_roles_permissions_config folder
+      - name: Find latest changed JSON file in funcational_roles_creation_config_folder
+        id: get_json_file
+        run: |
+          latest_commit=$(git log -1 --pretty=format:%H)
+          changed_files=$(git diff-tree --no-commit-id --name-only -r $latest_commit)
+
+          # Filter JSON files in the specified folder
+          filtered_files=$(echo "$changed_files" | grep "rbac/funcational_roles_creation_config_folder" | grep ".json" || true)
+
+          if [ -z "$filtered_files" ]; then
+            echo "No JSON file changes detected in funcational_roles_creation_config_folder."
+            echo "json_file=" >> $GITHUB_ENV
+          else
+            echo "JSON file found: $filtered_files"
+            echo "json_file=$filtered_files" >> $GITHUB_ENV
+          fi
+      # Proceed only if a JSON file was found (skip steps if no JSON file was found)
+      - name: Run Pipeline script if JSON file is found
+        if: ${{ env.json_file != '' }}
+        run: |
+          echo "The JSON file is: ${{ env.json_file }}"
+  funcational_roles_mapping:
+    needs: funcational_roles_creation
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code with full history to detect file changes
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Full history to ensure proper diff detection
+
+      # Find the latest changed JSON file in the db_roles_permissions_config folder
+      - name: Find latest changed JSON file in roles_mapping_config_folder
+        id: get_json_file
+        run: |
+          latest_commit=$(git log -1 --pretty=format:%H)
+          changed_files=$(git diff-tree --no-commit-id --name-only -r $latest_commit)
+
+          # Filter JSON files in the specified folder
+          filtered_files=$(echo "$changed_files" | grep "rbac/roles_mapping_config_folder" | grep ".json" || true)
+
+          if [ -z "$filtered_files" ]; then
+            echo "No JSON file changes detected in roles_mapping_config_folder."
             echo "json_file=" >> $GITHUB_ENV
           else
             echo "JSON file found: $filtered_files"
