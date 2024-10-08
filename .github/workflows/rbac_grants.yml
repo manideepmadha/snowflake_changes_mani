@@ -22,12 +22,18 @@ jobs:
           changed_files=$(git diff-tree --no-commit-id --name-only -r $latest_commit)
 
           # Filter JSON files in the specified folder
-          filtered_files=$(echo "$changed_files" | grep "repo/rbac/db_roles_permissions_config" | grep ".json")
+          filtered_files=$(echo "$changed_files" | grep "rbac/db_roles_permissions_config" | grep ".json")
 
           if [ -z "$filtered_files" ]; then
             echo "No JSON file changes detected in db_roles_permissions_config folder."
-            exit 1
+            echo "json_file=" >> $GITHUB_ENV
+          else
+            echo "JSON file found: $filtered_files"
+            echo "json_file=$filtered_files" >> $GITHUB_ENV
           fi
+      # Proceed only if a JSON file was found (skip steps if no JSON file was found)
+      - name: Run Pipeline script if JSON file is found
+        if: ${{ env.json_file != '' }}
+        run: |
+          echo "The JSON file is: ${{ env.json_file }}"
 
-          echo "JSON file found: $filtered_files"
-          echo "json_file=$filtered_files" >> $GITHUB_ENV
