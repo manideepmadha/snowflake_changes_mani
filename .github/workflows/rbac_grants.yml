@@ -26,16 +26,17 @@ jobs:
 
           if [ -z "$filtered_files" ]; then
             echo "No JSON file changes detected in db_roles_permissions_config_folder."
-            echo "json_file=" >> $GITHUB_ENV
+            echo "json_file=[]" >> $GITHUB_ENV
           else
-            echo "JSON file found: $filtered_files"
-            echo "json_file=$filtered_files" >> $GITHUB_ENV
+            json_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
+            echo "JSON file found: $json_files"
+            echo "json_files=$json_files" >> $GITHUB_ENV
           fi
       # Proceed only if a JSON file was found (skip steps if no JSON file was found)
       - name: Run Pipeline script if JSON file is found
-        if: ${{ env.json_file != '' }}
+        if: ${{ env.json_files != '[]' }}
         run: |
-          echo "The JSON file is: ${{ env.json_file }}"
+          echo "The JSON file is: ${{ fromJson(env.json_files) }}"
   warehouse_creation:
     needs: db_roles_permissions
     runs-on: ubuntu-latest
@@ -59,16 +60,17 @@ jobs:
 
           if [ -z "$filtered_files" ]; then
             echo "No JSON file changes detected in warehouse_creation_config_folder."
-            echo "json_file=" >> $GITHUB_ENV
+            echo "json_file=[]" >> $GITHUB_ENV
           else
-            echo "JSON file found: $filtered_files"
-            echo "json_file=$filtered_files" >> $GITHUB_ENV
+            json_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
+            echo "JSON file found: $json_files"
+            echo "json_files=$json_files" >> $GITHUB_ENV
           fi
       # Proceed only if a JSON file was found (skip steps if no JSON file was found)
       - name: Run Pipeline script if JSON file is found
-        if: ${{ env.json_file != '' }}
+        if: ${{ env.json_files != '[]' }}
         run: |
-          echo "The JSON file is: ${{ env.json_file }}"
+          echo "The JSON file is: ${{ fromJson(env.json_files) }}"
   funcational_roles_creation:
     needs: warehouse_creation
     runs-on: ubuntu-latest
@@ -92,16 +94,17 @@ jobs:
 
           if [ -z "$filtered_files" ]; then
             echo "No JSON file changes detected in funcational_roles_creation_config_folder."
-            echo "json_file=" >> $GITHUB_ENV
+            echo "json_file=[]" >> $GITHUB_ENV
           else
-            echo "JSON file found: $filtered_files"
-            echo "json_file=$filtered_files" >> $GITHUB_ENV
+            json_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
+            echo "JSON file found: $json_files"
+            echo "json_files=$json_files" >> $GITHUB_ENV
           fi
       # Proceed only if a JSON file was found (skip steps if no JSON file was found)
       - name: Run Pipeline script if JSON file is found
-        if: ${{ env.json_file != '' }}
+        if: ${{ env.json_files != '[]' }}
         run: |
-          echo "The JSON file is: ${{ env.json_file }}"
+          echo "The JSON file is: ${{ fromJson(env.json_files) }}"
   funcational_roles_mapping:
     needs: funcational_roles_creation
     runs-on: ubuntu-latest
@@ -125,14 +128,16 @@ jobs:
 
           if [ -z "$filtered_files" ]; then
             echo "No JSON file changes detected in roles_mapping_config_folder."
-            echo "json_file=" >> $GITHUB_ENV
+            echo "json_file=[]" >> $GITHUB_ENV
           else
-            echo "JSON file found: $filtered_files"
-            echo "json_file=$filtered_files" >> $GITHUB_ENV
+            json_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
+            echo "JSON file found: $json_files"
+            echo "json_files=$json_files" >> $GITHUB_ENV
           fi
       # Proceed only if a JSON file was found (skip steps if no JSON file was found)
       - name: Run Pipeline script if JSON file is found
-        if: ${{ env.json_file != '' }}
+        if: ${{ env.json_files != '[]' }}
         run: |
-          echo "The JSON file is: ${{ env.json_file }}"
+          echo "The JSON file is: ${{ fromJson(env.json_files) }}"
+          
 
