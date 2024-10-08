@@ -22,7 +22,7 @@ jobs:
           changed_files=$(git diff-tree --no-commit-id --name-only -r $latest_commit)
 
           # Filter JSON files in the specified folder
-          filtered_files=$(echo "$changed_files" | grep "rbac/db_roles_permissions_config" | grep ".json")
+          filtered_files=$(echo "$changed_files" | grep "rbac/db_roles_permissions_config" | grep ".json" || true)
 
           if [ -z "$filtered_files" ]; then
             echo "No JSON file changes detected in db_roles_permissions_config folder."
