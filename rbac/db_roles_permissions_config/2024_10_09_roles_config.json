@@ -10,7 +10,6 @@
             "scaling_policy": "ECONOMY",
             "comment": "This is a extra small warehouse used by the ED team"
         },
-        
         {
             "warehouse_name": "ED_S_WAREHOUSE",
             "warehouse_size": "MEDIUM",
