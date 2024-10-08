@@ -14,34 +14,20 @@ jobs:
         with:
           fetch-depth: 0  # Full history to ensure proper diff detection
 
-      # Get the latest PR number from the GitHub context (if running on a PR)
-      - name: Get PR number
-        id: pr_info
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "PR Number: ${{ github.event.pull_request.number }}"
-            echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-          else
-            echo "This workflow wasn't triggered by a PR."
-          fi
-
-      # Find the latest changed JSON file in db_roles_permissions_config folder
+      # Find the latest changed JSON file in the db_roles_permissions_config folder
       - name: Find latest changed JSON file in db_roles_permissions_config folder
         id: get_json_file
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            # If running on a PR, use the PR number to find the merged commit
-            latest_merged_pr=$(git log --merges --oneline -1 -grep "Merge pull request #${{ github.event.pull_request.number }} from" | cut -f1)
-          else
-            # If not running on a PR, find the latest merged commit
-            latest_merged_pr=$(git log --merges --oneline | head -1 | cut -f1)
-          fi
+          latest_commit=$(git log -1 --pretty=format:%H)
+          changed_files=$(git diff-tree --no-commit-id --name-only -r $latest_commit)
 
-          changed_files=$(git diff --name-only $latest_merged_pr main)
-          filtered_files=$(echo "$changed_files" | grep "repo/rbac/rbac_permissions_config")
+          # Filter JSON files in the specified folder
+          filtered_files=$(echo "$changed_files" | grep "repo/rbac/db_roles_permissions_config" | grep ".json")
+
           if [ -z "$filtered_files" ]; then
             echo "No JSON file changes detected in db_roles_permissions_config folder."
             exit 1
           fi
-          echo "$filtered_files"
+
+          echo "JSON file found: $filtered_files"
           echo "json_file=$filtered_files" >> $GITHUB_ENV
