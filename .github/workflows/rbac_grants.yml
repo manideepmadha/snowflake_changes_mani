@@ -121,14 +121,14 @@ jobs:
         id: get_json_file
         run: |
           latest_commit=$(git log -1 --pretty=format:%H)
-          changed_files=$(git diff-tree --no-commit-id --name-only -r $latest_commit)
+          changed_files=$(git diff-tree --no-commit-id --name-status -r $latest_commit)
 
           # Filter JSON files in the specified folder
-          filtered_files=$(echo "$changed_files" | grep "rbac/roles_mapping_config_folder" | grep ".json" || true)
+          filtered_files=$(echo "$changed_files" | grep "rbac/roles_mapping_config_folder" | grep ".json" | awk '$1 != "D" {print $NF}' || true)
 
           if [ -z "$filtered_files" ]; then
             echo "No JSON file changes detected in roles_mapping_config_folder."
-            echo "json_file=[]" >> $GITHUB_ENV
+            echo "json_files=[]" >> $GITHUB_ENV
           else
             json_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
             echo "JSON file found: $json_files"
@@ -139,5 +139,4 @@ jobs:
         if: ${{ env.json_files != '[]' }}
         run: |
           echo "The JSON file is: ${{ fromJson(env.json_files) }}"
-          
 
