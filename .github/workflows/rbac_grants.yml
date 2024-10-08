@@ -10,7 +10,7 @@ jobs:
     steps:
       # Checkout the code with full history to detect file changes
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history to ensure proper diff detection
 
@@ -38,13 +38,12 @@ jobs:
         run: |
           echo "The JSON file is: ${{ fromJson(env.json_files) }}"
   warehouse_creation:
-    needs: db_roles_permissions
     runs-on: ubuntu-latest
 
     steps:
       # Checkout the code with full history to detect file changes
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history to ensure proper diff detection
 
@@ -71,29 +70,28 @@ jobs:
         if: ${{ env.json_files != '[]' }}
         run: |
           echo "The JSON file is: ${{ fromJson(env.json_files) }}"
-  funcational_roles_creation:
-    needs: warehouse_creation
+  functional_roles_creation:
     runs-on: ubuntu-latest
 
     steps:
       # Checkout the code with full history to detect file changes
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history to ensure proper diff detection
 
       # Find the latest changed JSON file in the db_roles_permissions_config folder
-      - name: Find latest changed JSON file in funcational_roles_creation_config_folder
+      - name: Find latest changed JSON file in functional_roles_creation_config_folder
         id: get_json_file
         run: |
           latest_commit=$(git log -1 --pretty=format:%H)
           changed_files=$(git diff-tree --no-commit-id --name-status -r $latest_commit)
 
           # Filter JSON files in the specified folder
-          filtered_files=$(echo "$changed_files" | grep "rbac/funcational_roles_creation_config_folder" | grep ".json" | awk '$1 != "D" {print $NF}' || true)
+          filtered_files=$(echo "$changed_files" | grep "rbac/functional_roles_creation_config_folder" | grep ".json" | awk '$1 != "D" {print $NF}' || true)
 
           if [ -z "$filtered_files" ]; then
-            echo "No JSON file changes detected in funcational_roles_creation_config_folder."
+            echo "No JSON file changes detected in functional_roles_creation_config_folder."
             echo "json_files=[]" >> $GITHUB_ENV
           else
             json_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
@@ -105,14 +103,17 @@ jobs:
         if: ${{ env.json_files != '[]' }}
         run: |
           echo "The JSON file is: ${{ fromJson(env.json_files) }}"
-  funcational_roles_mapping:
-    needs: funcational_roles_creation
+  functional_roles_mapping:
+    needs: 
+      - db_roles_permissions
+      - warehouse_creation
+      - functional_roles_creation
     runs-on: ubuntu-latest
 
     steps:
       # Checkout the code with full history to detect file changes
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history to ensure proper diff detection
 
