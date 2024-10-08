@@ -29,11 +29,13 @@ jobs:
     - name: Find latest changed JSON file in db_roles_permissions_config folder
       id: get_json_file
       run: |
-        # Find changes in db_roles_permissions_config folder for the latest PR
-        FILE=$(git diff --name-only origin/main HEAD | grep -E '^repo/rbac/db_roles_permissions_config/.*\.json$' | tail -n 1)
-        echo "JSON File: $FILE"
-        if [ -z "$FILE" ]; then
+        latest_merged_pr=$(git log --merges --oneline | head -1 | cut -f1)
+        changed_files=$(git diff --name-only $latest_merged_pr main)
+        filtered_files=$(echo "$changed_files" | grep "repo/rbac/rbac_permissions_config")
+        if [ -z "$filtered_files" ]; then
           echo "No JSON file changes detected in db_roles_permissions_config folder."
           exit 1
         fi
-        echo "json_file=$FILE" >> $GITHUB_ENV
+        echo "$filtered_files"
+        echo "json_file=$filtered_files" >> $GITHUB_ENV
+        
