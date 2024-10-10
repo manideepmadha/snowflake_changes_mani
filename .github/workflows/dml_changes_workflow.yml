@@ -14,8 +14,8 @@ jobs:
         with:
           fetch-depth: 0  # Full history to ensure proper diff detection
 
-      # Find the latest changed SQL file in the db_roles_permissions_config folder
-      - name: Find latest changed SQL file in db_roles_permissions_config_folder
+      # Find the latest changed SQL file in the DML_CHANGES folder
+      - name: Find latest changed SQL file in DML_CHANGES
         id: get_sql_file
         run: |
           latest_commit=$(git log -1 --pretty=format:%H)
@@ -23,7 +23,7 @@ jobs:
           # Filter SQL files in the specified folder
           filtered_files=$(echo "$changed_files" | grep "DML_CHANGES/DEV" | grep ".sql" | awk '$1 != "D" {print $NF}' || true)
           if [ -z "$filtered_files" ]; then
-            echo "No SQL file changes detected in db_roles_permissions_config_folder."
+            echo "No SQL file changes detected in DML_CHANGES."
             echo "sql_files=[]" >> $GITHUB_ENV
           else
             sql_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
