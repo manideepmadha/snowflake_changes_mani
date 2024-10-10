@@ -1,4 +1,4 @@
-name: DML_CHANGES_WORKFLOW
+name: DML_CHANGES_WORKFLOW_NEW
 
 on:
   workflow_dispatch:  # Allows manual triggering
