@@ -20,6 +20,7 @@ jobs:
         run: |
           latest_commit=$(git log -1 --pretty=format:%H)
           changed_files=$(git diff-tree --no-commit-id --name-status -r $latest_commit)
+          echo $ changed_files
           # Filter SQL files in the specified folder
           filtered_files=$(echo "$changed_files" | grep "DML_CHANGES/DEV" | grep ".sql" | awk '$1 != "D" {print $NF}' || true)
           if [ -z "$filtered_files" ]; then
