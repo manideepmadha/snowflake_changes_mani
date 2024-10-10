@@ -1,0 +1,47 @@
+name: DML_CHANGES_WORKFLOW
+
+on:
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  dml_changes:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code with full history to detect file changes
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history to ensure proper diff detection
+
+      # Find the latest changed SQL file in the db_roles_permissions_config folder
+      - name: Find latest changed SQL file in db_roles_permissions_config_folder
+        id: get_sql_file
+        run: |
+          latest_commit=$(git log -1 --pretty=format:%H)
+          changed_files=$(git diff-tree --no-commit-id --name-status -r $latest_commit)
+          # Filter SQL files in the specified folder
+          filtered_files=$(echo "$changed_files" | grep "DML_CHANGES/DEV" | grep ".sql" | awk '$1 != "D" {print $NF}' || true)
+          if [ -z "$filtered_files" ]; then
+            echo "No SQL file changes detected in db_roles_permissions_config_folder."
+            echo "sql_files=[]" >> $GITHUB_ENV
+          else
+            sql_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
+            echo "SQL file found: $sql_files"
+            echo "sql_files=$sql_files" >> $GITHUB_ENV
+          fi
+      - name: Install python packages
+        if: ${{ env.sql_files != '[]' }}
+        run: |
+          pip install snowflake-connector-python
+      - name: Run Python Script
+        if: ${{ env.sql_files != '[]' }}
+        env:
+          SNOWFLAKE_ACCOUNT: YQEWXYI-GY20588
+          SNOWFLAKE_USERNAME: MANIDEEPMADHA
+          SNOWFLAKE_PASSWORD: Mani@snowflake1432
+          SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
+          ADDED_FILES: ${{ env.sql_files }}
+        run: |
+          python .github/workflows/script/logic.py
+		  
