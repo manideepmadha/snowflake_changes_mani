@@ -1,7 +1,12 @@
 name: DML_CHANGES_WORKFLOW_NEW
 
 on:
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch: # Manual trigger
+    inputs:
+      ServiceNow CR:
+        required: true
+        type: string
+        description: 'ServiceNow Change Request Number'
 
 jobs:
   dml_changes:
@@ -44,4 +49,4 @@ jobs:
           SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
           ADDED_FILES: ${{ env.sql_files }}
         run: |
-          python .github/workflows/script/logic.py  
+          python .github/workflows/script/dml_changes_script.py  
