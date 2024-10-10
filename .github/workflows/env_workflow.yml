@@ -1,0 +1,64 @@
+name: RBAC_WORKFLOW_TESTING
+
+on:
+  # Trigger for manual dispatch, PR events, and when a tag is created (for QA environment)
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - dev
+  push:
+    tags:
+      - 'qa*'  # Trigger when a tag is pushed for QA
+
+jobs:
+  db_roles_permissions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure full history for proper diff detection
+
+      # Determine environment (dev or qa) based on the event type
+      - name: Set environment variable
+        id: set_env
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "env=dev" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" == "push" ] && [[ $GITHUB_REF == refs/tags/* ]]; then
+            echo "env=qa" >> $GITHUB_ENV
+          else
+            echo "Unknown environment. Exiting..."
+            exit 1
+
+      # Find changed JSON files based on the environment (dev or qa)
+      - name: Find changed JSON files in db_roles_permissions_config_folder
+        id: get_json_file
+        run: |
+          if [ "${{ env.env }}" == "dev" ]; then
+            # For dev environment (PRs), find changed files
+            latest_commit=$(git log -1 --pretty=format:%H)
+            changed_files=$(git diff-tree --no-commit-id --name-status -r $latest_commit)
+            filtered_files=$(echo "$changed_files" | grep "rbac/db_roles_permissions_config_folder" | grep ".json" | awk '$1 != "D" {print $NF}' || true)
+          elif [ "${{ env.env }}" == "qa" ]; then
+            # For qa environment (Tag creation), find changed files
+            latest_commit=$(git log -1 --pretty=format:%H)
+            changed_files=$(git diff-tree --no-commit-id --name-status -r $latest_commit)
+            filtered_files=$(echo "$changed_files" | grep "rbac/db_roles_permissions_config_folder" | grep ".json" | awk '$1 != "D" {print $NF}' || true)
+          fi
+
+          if [ -z "$filtered_files" ]; then
+            echo "No JSON file changes detected in db_roles_permissions_config_folder."
+            echo "json_files=[]" >> $GITHUB_ENV
+          else
+            json_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
+            echo "JSON file found: $json_files"
+            echo "json_files=$json_files" >> $GITHUB_ENV
+          fi
+
+      # Proceed only if JSON files were found (skip step if no JSON files)
+      - name: Run pipeline script if JSON files are found
+        if: ${{ env.json_files != '[]' }}
+        run: |
+          echo "The JSON files are: ${{ fromJson(env.json_files) }}"
