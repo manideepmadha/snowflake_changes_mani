@@ -1,0 +1,44 @@
+name: RBAC_PIPELINE
+
+on:
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  db_roles_automation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Find latest changed json file in RBAC_CHANGES
+        id: get_json_file
+        run: |
+          latest_commit=$(git log -1 --pretty=format:%H)
+          changed_files=$(git diff-tree --no-commit-id --name-status -r $latest_commit)
+          echo $ changed_files
+          # Filter json files in the specified folder
+          filtered_files=$(echo "$changed_files" | grep "db_role_grants_config_files" | grep ".json" | awk '$1 != "D" {print $NF}' || true)
+          if [ -z "$filtered_files" ]; then
+            echo "No json file changes detected in RBAC_CHANGES."
+            echo "json_files=[]" >> $GITHUB_ENV
+          else
+            json_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
+            echo "json file found: $json_files"
+            echo "json_files=$json_files" >> $GITHUB_ENV
+          fi
+      - name: Install python packages
+        if: ${{ env.json_files != '[]' }}
+        run: |
+          pip install snowflake-connector-python
+      - name: Run Python Script
+        if: ${{ env.json_files != '[]' }}
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrtes.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USERNAME: ${{ secrtes.SNOWFLAKE_USERNAME }}
+          SNOWFLAKE_PASSWORD: ${{ secrtes.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrtes.SNOWFLAKE_ROLE }}
+          ADDED_FILES: ${{ env.json_files }}
+        run: |
+          python rbac_scripts/db_roles_automation.py

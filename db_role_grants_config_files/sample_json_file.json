@@ -1,0 +1,64 @@
+{
+    "role": [
+        {
+            "grantee_type": "DATABASE ROLE",
+            "database_name": "${DB_NAME}",
+            "grantee_name": "${DB_NAME}_READ_ONLY",
+            "enforcement_action": "MERGE",
+            "grantees": [
+                {
+                    "type": "database",
+                    "name": "${DB_NAME}", 
+                    "privileges": ["USAGE - FUTURE SCHEMA"]
+                },
+                {
+                    "type": "schema",
+                    "name": ["all"], 
+                    "privileges": [
+                        "USAGE",
+                        "SELECT - FUTURE TABLE",
+                        "SELECT - FUTURE VIEW",
+                        "USAGE - FUTURE FILE FORMAT",
+                        "USAGE - FUTURE STAGE"
+                    ]
+                },
+                {
+                    "type": "TABLE",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["SELECT"]
+                },
+                {
+                    "type": "VIEW",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["SELECT"]
+                },
+                {
+                    "type": "STAGE",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["READ", "WRITE"]
+                },
+                {
+                    "type": "FILE FORMAT",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["USAGE"]
+                },
+                {
+                    "type": "MATERIALIZED VIEW",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["SELECT"]
+                },
+                {
+                    "type": "SEQUENCE",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["USAGE"]
+                }
+            ]
+        }
+    ]
+}
