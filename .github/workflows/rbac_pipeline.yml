@@ -35,10 +35,10 @@ jobs:
       - name: Run Python Script
         if: ${{ env.json_files != '[]' }}
         env:
-          SNOWFLAKE_ACCOUNT: ${{ secrtes.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USERNAME: ${{ secrtes.SNOWFLAKE_USERNAME }}
-          SNOWFLAKE_PASSWORD: ${{ secrtes.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ROLE: ${{ secrtes.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USERNAME: ${{ secrets.SNOWFLAKE_USERNAME }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           ADDED_FILES: ${{ env.json_files }}
         run: |
           python rbac_scripts/db_roles_automation.py

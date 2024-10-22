@@ -18,8 +18,7 @@
                         "USAGE",
                         "SELECT - FUTURE TABLE",
                         "SELECT - FUTURE VIEW",
-                        "USAGE - FUTURE FILE FORMAT",
-                        "USAGE - FUTURE STAGE"
+                        "USAGE - FUTURE FILE FORMAT"
                     ]
                 },
                 {
