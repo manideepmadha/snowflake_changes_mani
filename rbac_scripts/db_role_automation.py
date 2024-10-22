@@ -351,16 +351,16 @@ if __name__ == "__main__":
 
     # result = ' '.join(f'./{item}' for item in data_list)
     
-    # variables = {"DB_NAME": "MANI_DB"}
+    variables = {"DB_NAME": "MANI_DB"}
     
     for file in json_array:
-        with open(file, 'r') as f:
-            data = json.load(f)
+        # with open(file, 'r') as f:
+        #     data = json.load(f)
 
-        # Print the content of the JSON file
-        print(json.dumps(data, indent=4))
+        # # Print the content of the JSON file
+        # print(json.dumps(data, indent=4))
 
-        # messages = grant_permissions_from_json(connection, file, variables)
+        messages = grant_permissions_from_json(connection, file, variables)
         # print(messages)
     connection.close()
 

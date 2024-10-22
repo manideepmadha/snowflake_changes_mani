@@ -17,7 +17,9 @@
                     "privileges": [
                         "USAGE",
                         "SELECT - FUTURE TABLE",
-                        "SELECT - FUTURE VIEW"
+                        "SELECT - FUTURE VIEW",
+                        "USAGE - FUTURE FILE FORMAT",
+                        "USAGE - FUTURE STAGE"
                     ]
                 },
                 {
