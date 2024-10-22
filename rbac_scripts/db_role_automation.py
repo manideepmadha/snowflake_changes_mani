@@ -361,6 +361,6 @@ if __name__ == "__main__":
         # print(json.dumps(data, indent=4))
 
         messages = grant_permissions_from_json(connection, file, variables)
-        # print(messages)
+        print(messages)
     connection.close()
 
