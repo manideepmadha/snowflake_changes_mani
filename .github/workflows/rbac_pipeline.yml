@@ -41,4 +41,4 @@ jobs:
           SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           ADDED_FILES: ${{ env.json_files }}
         run: |
-          python rbac_scripts/db_roles_automation.py
+          python rbac_scripts/db_role_automation.py

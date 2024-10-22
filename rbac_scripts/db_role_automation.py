@@ -354,7 +354,11 @@ if __name__ == "__main__":
     # variables = {"DB_NAME": "MANI_DB"}
     
     for file in json_array:
-        print(file)
+        with open(file, 'r') as f:
+            data = json.load(f)
+
+        # Print the content of the JSON file
+        print(json.dumps(data, indent=4))
 
         # messages = grant_permissions_from_json(connection, file, variables)
         # print(messages)
