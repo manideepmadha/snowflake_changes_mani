@@ -15,11 +15,24 @@ jobs:
       - name: Find latest changed json file in RBAC_CHANGES
         id: get_json_file
         run: |
-          latest_commit=$(git log -1 --pretty=format:%H)
-          changed_files=$(git diff-tree --no-commit-id --name-status -r $latest_commit)
+          latest_commits=$(git log origin/main --merges --grep="Merge pull request" -1 --pretty=format:%H)
+
+          # Initialize an empty array to store files
+          declare -A file_set
+
+          # Loop through the commits to collect changed files
+          for commit in $latest_commits; do
+              commit_files=$(git diff-tree --no-commit-id --name-status -r $commit | awk '$1 != "D" {print $NF}')
+              for file in $commit_files; do
+                  file_set["$file"]=1  # Store files in associative array for uniqueness
+              done
+          done
+
+          # Extract unique files from the array
+          changed_files=$(printf "%s\n" "${!file_set[@]}")
           echo $ changed_files
           # Filter json files in the specified folder
-          filtered_files=$(echo "$changed_files" | grep "db_role_grants_config_files" | grep ".json" | awk '$1 != "D" {print $NF}' || true)
+          filtered_files=$(echo "$changed_files" | grep "db_role_grants_config_files" | grep ".json" || true)
           if [ -z "$filtered_files" ]; then
             echo "No json file changes detected in RBAC_CHANGES."
             echo "json_files=[]" >> $GITHUB_ENV
