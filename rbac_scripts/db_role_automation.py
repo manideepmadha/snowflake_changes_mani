@@ -342,21 +342,38 @@ if __name__ == "__main__":
         database='SNOWFLAKE',
         schema='INFORMATION_SCHEMA'
     )
-    added_files = os.getenv('ADDED_FILES')
-    json_array = json.loads(added_files)
-
-    # result = ' '.join(f'./{item}' for item in data_list)
     
-    variables = {"DB_NAME": "MANI_DB"}
+    variables = os.getenv('VARIABLES', 'False')
     
-    for file in json_array:
-        with open(file, 'r') as f:
+    if variables.lower() != 'false':
+        try:
+            variables = json.loads(variables)
+        except json.JSONDecodeError:
+            print("Invalid JSON in VARIABLES. Exiting.")
+            exit(1)
+        
+        template_json_file_path = "db_role_grants_config_files/sample_json_file.json"
+        with open(template_json_file_path, 'r') as f:
             json_data = json.load(f)
-
+            
+        # variables = [{"DB_NAME": "MANI_DB"}]
         # REPLACING PLACE HOLDERS IN JSON IF ANY
-        json_data = replace_placeholders(json_data, variables)
+        for var in variables:
+            json_data = replace_placeholders(json_data, variables)
+            messages = grant_permissions_from_json(connection, json_data)
+            print('\n'.join(messages))
+    else:
+        added_files = os.getenv('ADDED_FILES')
+        json_array = json.loads(added_files)
 
-        messages = grant_permissions_from_json(connection, file)
-        print('\n'.join(messages))
+        for file in json_array:
+            print(file)
+            with open(file, 'r') as f:
+                json_data = json.load(f)
+                
+            print(json_data)
+
+            messages = grant_permissions_from_json(connection, json_data)
+            print('\n'.join(messages))
     connection.close()
 
