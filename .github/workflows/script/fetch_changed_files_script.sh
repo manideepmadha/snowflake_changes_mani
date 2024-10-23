@@ -20,8 +20,6 @@ declare -A file_set
 
 # Loop through each merge commit
 for commit in $latest_commits; do
-  echo "Processing merge commit: $commit"
-
   # Get the two parent commits of the merge
   parents=$(git rev-list --parents -n 1 $commit)
 
