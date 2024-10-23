@@ -19,7 +19,7 @@ jobs:
           file_extension=".json"
           log_count=1
 
-          filtered_files=$(./script/filter_merge_commits.sh "$folder" "$file_extension" "$log_count")
+          filtered_files=$(.github/workflows/script/filter_merge_commits.sh "$folder" "$file_extension" "$log_count")
           if [ -z "$filtered_files" ]; then
             echo "No json file changes detected in RBAC_CHANGES."
             echo "json_files=[]" >> $GITHUB_ENV
