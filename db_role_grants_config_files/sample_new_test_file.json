@@ -1,0 +1,44 @@
+{
+    "role": [
+        {
+            "grantee_type": "DATABASE ROLE",
+            "database_name": "MANI_DB",
+            "grantee_name": "MANI_DB_READ_ONLY",
+            "enforcement_action": "MERGE",
+            "grantees": [
+                {
+                    "type": "database",
+                    "name": "MANI_DB", 
+                    "privileges": ["USAGE - FUTURE SCHEMA"]
+                },
+                {
+                    "type": "schema",
+                    "name": ["all"], 
+                    "privileges": [
+                        "USAGE",
+                        "SELECT - FUTURE TABLE",
+                        "SELECT - FUTURE VIEW"
+                    ]
+                },
+                {
+                    "type": "TABLE",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["SELECT"]
+                },
+                {
+                    "type": "VIEW",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["SELECT"]
+                },
+                {
+                    "type": "STAGE",
+                    "schema_name": ["all"],
+                    "name": ["all"], 
+                    "privileges": ["READ", "WRITE"]
+                }
+            ]
+        }
+    ]
+}
