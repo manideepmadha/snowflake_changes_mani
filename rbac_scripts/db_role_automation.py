@@ -72,13 +72,9 @@ def replace_placeholders(json_data, variables):
 
 
 
-def grant_permissions_from_json(connection, json_file, variables):
+def grant_permissions_from_json(connection, json_data):
     
-    with open(json_file, 'r') as f:
-        json_data = json.load(f)
 
-    # REPLACING PLACE HOLDERS IN JSON IF ANY
-    json_data = replace_placeholders(json_data, variables)
     cursor = connection.cursor()
     messages = []
 
@@ -354,13 +350,13 @@ if __name__ == "__main__":
     variables = {"DB_NAME": "MANI_DB"}
     
     for file in json_array:
-        # with open(file, 'r') as f:
-        #     data = json.load(f)
+        with open(file, 'r') as f:
+            json_data = json.load(f)
 
-        # # Print the content of the JSON file
-        # print(json.dumps(data, indent=4))
+        # REPLACING PLACE HOLDERS IN JSON IF ANY
+        json_data = replace_placeholders(json_data, variables)
 
-        messages = grant_permissions_from_json(connection, file, variables)
+        messages = grant_permissions_from_json(connection, file)
         print('\n'.join(messages))
     connection.close()
 
