@@ -18,14 +18,8 @@ fi
 # Use an associative array to collect unique changed files
 declare -A file_set
 
-
-for commit in $latest_commits; do
-  files=$(git diff-tree --no-commit-id --name-status -r "$commit" | awk '$1 != "D" {print $NF}')
-  changed_files+=$'\n'"$files"
-done
-
 # Loop through each merge commit
-for commit in $merge_commits; do
+for commit in $latest_commits; do
   echo "Processing merge commit: $commit"
 
   # Get the two parent commits of the merge
