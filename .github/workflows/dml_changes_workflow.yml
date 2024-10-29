@@ -2,6 +2,8 @@ name: DML_CHANGES_WORKFLOW_NEW
 
 on:
   workflow_dispatch: # Manual trigger
+    branches:
+      - main
     inputs:
       ServiceNow CR:
         required: true
