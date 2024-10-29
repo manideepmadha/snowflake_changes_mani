@@ -22,16 +22,16 @@ jobs:
       # Find the latest changed SQL file in the DML_CHANGES folder
       - name: Set executable permissions for the script
         run: chmod +x .github/workflows/script/fetch_changed_files_script.sh
-      - name: Find latest changed json file in role_mappings
+      - name: Find latest changed json file in dml_changes
         id: get_sql_file
         run: |
-          folder="dml_changes/(DEV|PROD|QA)"
+          folder="dml_changes/DEV"
           file_extension=".sql"
           log_count=1
 
           filtered_files=$(.github/workflows/script/fetch_changed_files_script.sh "$folder" "$file_extension" "$log_count" "$GITHUB_JOB")
           if [ -z "$filtered_files" ]; then
-            echo "No sql file changes detected in role_mappings."
+            echo "No sql file changes detected in dml_changes."
             echo "sql_files=[]" >> $GITHUB_ENV
           else
             sql_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
