@@ -20,20 +20,22 @@ jobs:
           fetch-depth: 0  # Full history to ensure proper diff detection
 
       # Find the latest changed SQL file in the DML_CHANGES folder
-      - name: Find latest changed SQL file in DML_CHANGES
+      - name: Set executable permissions for the script
+        run: chmod +x .github/workflows/script/fetch_changed_files_script.sh
+      - name: Find latest changed json file in role_mappings
         id: get_sql_file
         run: |
-          latest_commit=$(git log -1 --pretty=format:%H)
-          changed_files=$(git diff-tree --no-commit-id --name-status -r $latest_commit)
-          echo $ changed_files
-          # Filter SQL files in the specified folder
-          filtered_files=$(echo "$changed_files" | grep "DML_CHANGES/DEV" | grep ".sql" | awk '$1 != "D" {print $NF}' || true)
+          folder="dml_changes/(DEV|PROD|QA)"
+          file_extension=".sql"
+          log_count=1
+
+          filtered_files=$(.github/workflows/script/fetch_changed_files_script.sh "$folder" "$file_extension" "$log_count" "$GITHUB_JOB")
           if [ -z "$filtered_files" ]; then
-            echo "No SQL file changes detected in DML_CHANGES."
+            echo "No sql file changes detected in role_mappings."
             echo "sql_files=[]" >> $GITHUB_ENV
           else
             sql_files=$(echo "$filtered_files" | jq -R -s -c 'split("\n")[:-1]')
-            echo "SQL file found: $sql_files"
+            echo "sql file found: $sql_files"
             echo "sql_files=$sql_files" >> $GITHUB_ENV
           fi
       - name: Install python packages

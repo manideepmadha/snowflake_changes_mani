@@ -4,6 +4,7 @@
 folder="$1"          # Folder to filter files from
 file_extension="$2"  # File extension to filter, e.g., .json
 log_count="$3"       # Number of logs to consider
+job_name="${4:-}"
 
 # Retrieve the latest merge commits
 latest_commits=$(git log origin/main --merges -n "$log_count" --pretty=format:%H)
@@ -41,7 +42,16 @@ unique_files=$(printf "%s\n" "${!file_set[@]}")
 
 
 # Filter unique files from the specified folder with the given extension
-filtered_files=$(echo "$unique_files" | grep "$folder" | grep "$file_extension" | sort -u || true)
+# filtered_files=$(echo "$unique_files" | grep "$folder" | grep "$file_extension" | sort -u || true)
+
+
+if [[ -n "$job_name" ]]; then
+  echo "Filtering files based on job: $job_name"
+  filtered_files=$(echo "$changed_files" | grep -E "$folder/.*\\$file_extension" | sort -u || true)
+else
+  echo "Using default filter logic"
+  filtered_files=$(echo "$changed_files" | grep "$folder" | grep "$file_extension" | sort -u || true)
+fi
 
 echo $filtered_files
 
