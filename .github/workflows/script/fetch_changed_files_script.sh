@@ -46,10 +46,8 @@ unique_files=$(printf "%s\n" "${!file_set[@]}")
 
 
 if [[ -n "$job_name" ]]; then
-  echo "Filtering files based on job: $job_name"
   filtered_files=$(echo "$changed_files" | grep -E "$folder/.*\\$file_extension" | sort -u || true)
 else
-  echo "Using default filter logic"
   filtered_files=$(echo "$changed_files" | grep "$folder" | grep "$file_extension" | sort -u || true)
 fi
 
