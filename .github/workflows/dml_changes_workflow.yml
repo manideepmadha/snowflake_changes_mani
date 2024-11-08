@@ -32,7 +32,7 @@ jobs:
           log_count=1
           env="DEV"
 
-          filtered_files=$(.github/workflows/script/fetch_changed_files_script.sh "$folder" "$file_extension" "$log_count" "$GITHUB_JOB",$env)
+          filtered_files=$(.github/workflows/script/fetch_changed_files_script.sh "$folder" "$file_extension" "$log_count" "$GITHUB_JOB" "$env")
           if [ -z "$filtered_files" ]; then
             echo "No sql file changes detected in dml_changes."
             echo "sql_files=[]" >> $GITHUB_ENV
