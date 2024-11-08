@@ -27,10 +27,10 @@ jobs:
       - name: Find latest changed json file in dml_changes
         id: get_sql_file
         run: |
-          folder="dml_changes/DEV"
+          folder="dml_changes/${{ github.event.inputs.ENV }}"
           file_extension=".sql"
           log_count=1
-          env="DEV"
+          env="${{ github.event.inputs.ENV }}"
 
           filtered_files=$(.github/workflows/script/fetch_changed_files_script.sh "$folder" "$file_extension" "$log_count" "$GITHUB_JOB" "$env")
           if [ -z "$filtered_files" ]; then
