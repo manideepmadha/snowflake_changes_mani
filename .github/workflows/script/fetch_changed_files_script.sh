@@ -45,11 +45,13 @@ unique_files=$(printf "%s\n" "${!file_set[@]}")
 # Filter unique files from the specified folder with the given extension
 # filtered_files=$(echo "$unique_files" | grep "$folder" | grep "$file_extension" | sort -u || true)
 
-# if [[ -n "$job_name" ]]; then
 filtered_files=$(echo "$unique_files" | grep -E "dml_changes/$env/.*\.sql" | sort -u || true)
-# else
-  # filtered_files=$(echo "$unique_files" | grep "$folder" | grep "$file_extension" | sort -u || true)
-# fi
+
+# # if [[ -n "$job_name" ]]; then
+# filtered_files=$(echo "$unique_files" | grep -E "dml_changes/$env/.*\.sql" | sort -u || true)
+# # else
+#   # filtered_files=$(echo "$unique_files" | grep "$folder" | grep "$file_extension" | sort -u || true)
+# # fi
 
 echo $filtered_files
 
