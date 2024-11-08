@@ -9,6 +9,10 @@ on:
         required: true
         type: string
         description: 'ServiceNow Change Request Number'
+      ENV:
+        required: true
+        type: string
+        description: 'Environment'
 
 jobs:
   dml_changes:
