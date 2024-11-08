@@ -9,6 +9,10 @@ on:
         required: true
         type: string
         description: 'ServiceNow Change Request Number'
+      ENV:
+        required: true
+        type: string
+        description: 'Environment'
 
 jobs:
   dml_changes:
@@ -30,7 +34,7 @@ jobs:
           folder="dml_changes/DEV"
           file_extension=".sql"
           log_count=1
-          env="DEV"
+          env=github.event.inputs.ENV
 
           filtered_files=$(.github/workflows/script/fetch_changed_files_script.sh "$folder" "$file_extension" "$log_count" "$GITHUB_JOB" "$env")
           if [ -z "$filtered_files" ]; then
