@@ -168,6 +168,6 @@ def main():
     process_added_files(result)
 
 if __name__ == "__main__":
-    service_now_number = sys.argv[0]
+    service_now_number = sys.argv[1]
     print(service_now_number)
     main()
