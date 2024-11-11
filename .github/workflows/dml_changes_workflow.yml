@@ -58,4 +58,4 @@ jobs:
           SNOWFLAKE_WAREHOUSE: 'COMPUTE_WH'
           ADDED_FILES: ${{ env.sql_files }}
         run: |
-          python .github/workflows/script/dml_changes_script.py ${{github.event.inputs.ENV}}
+          python .github/workflows/script/dml_changes_script.py ${{github.event.inputs.ServiceNow CR}}
