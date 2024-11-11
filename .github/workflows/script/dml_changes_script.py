@@ -170,4 +170,5 @@ def main():
 if __name__ == "__main__":
     service_now_number = sys.argv[1]
     print(service_now_number)
+    print(sys.argv[2])
     main()
