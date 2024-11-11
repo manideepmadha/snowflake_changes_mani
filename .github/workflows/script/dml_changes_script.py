@@ -23,6 +23,9 @@ def get_connection():
     )
 def execute_sql_function(folder, files):
     print(f"\nHello! Executing SQL function for folder '{folder}' with the following files:")
+    print('---------------')
+    print(service_now_number)
+
     for i, sql_file in enumerate(files, 1):
         if sql_file.endswith(':changes.yml'):
             print(f"\tSkipping file: {sql_file} (Not an SQL file)")
@@ -165,4 +168,6 @@ def main():
     process_added_files(result)
 
 if __name__ == "__main__":
+    service_now_number = sys.argv[0]
+    print(service_now_number)
     main()
