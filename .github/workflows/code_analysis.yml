@@ -3,6 +3,9 @@ name: Code Quality Check
 on:
   pull_request:
     branches: [main] # or any other branches you want to check
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   pythonFiles: # List out changed/added Python files
@@ -80,6 +83,7 @@ jobs:
       - name: Create PR comment
         uses: actions/github-script@v6
         with:
+          token: ${{ secrets.PAT_GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             const pylintReport = fs.readFileSync('pylint_report.txt', 'utf8');
