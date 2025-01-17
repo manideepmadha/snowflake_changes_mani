@@ -21,7 +21,7 @@ jobs:
       - name: Get Python files
         id: set-python-files
         run: |
-          run: echo "pythonfiles=$(git diff --name-only --diff-filter=ACMRT origin/${{ github.event.pull_request.base.ref }} HEAD -- '*.py' | uniq | jq -R -s -c 'split("\n")[:-1]' | jq -r '.[] | ("./" + .)' | jq -R -r -s -c 'split("\n")[:-1] | join(" ")')" >>$GITHUB_OUTPUT
+          echo "pythonfiles=$(git diff --name-only --diff-filter=ACMRT origin/${{ github.event.pull_request.base.ref }} HEAD -- '*.py' | uniq | jq -R -s -c 'split("\n")[:-1]' | jq -r '.[] | ("./" + .)' | jq -R -r -s -c 'split("\n")[:-1] | join(" ")')" >>$GITHUB_OUTPUT
 
       - name: Print files to be scanned
         run: echo ${{ steps.set-python-files.outputs.pythonfiles }}
