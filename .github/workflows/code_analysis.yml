@@ -46,7 +46,7 @@ jobs:
       - name: Analyze code
         run: |
           # Pylint analysis
-          pylint --fail-under=8.0 --disable=R,C --generate-reports=yes --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt
+          pylint --fail-under=8.0 --disable=R,C --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt
 
           # Cyclomatic complexity analysis using Radon
           radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt
