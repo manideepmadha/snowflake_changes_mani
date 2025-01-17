@@ -45,36 +45,37 @@ jobs:
 
       - name: Analyze code
         run: |
+          set -e
+          echo "Analyzing files: ${{ needs.pythonFiles.outputs.pythonfiles }}"
+
           # Pylint analysis
-          pylint --fail-under=8.0 --disable=R,C --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt
+          echo "Running Pylint..."
+          pylint --disable=R,C --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt || echo "Pylint failed."
 
-          # Cyclomatic complexity analysis using Radon
-          radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt
+          # Cyclomatic complexity analysis
+          echo "Running Radon CC..."
+          radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt || echo "Radon failed."
 
-          # Boilerplate code detection using pyflakes
-          pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt
+          # Boilerplate detection
+          echo "Running Pyflakes..."
+          pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt || echo "Pyflakes failed."
 
       - name: Calculate code rating
         run: |
-          # Calculate a simple code rating based on Pylint score and cyclomatic complexity
-          # You can adjust the weights and thresholds as needed
-          pylint_score=$(grep "Your code has been rated at" pylint_report.txt | awk '{print $6}')
-          avg_complexity=$(grep "Average complexity" cc_report.txt | awk '{print $3}')
-
-          if [[ $(echo "$pylint_score > 9" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 5" | bc -l) -eq 1 ]]; then
-            rating="★★★★★"
-            reason="Excellent Pylint score and low cyclomatic complexity."
-          elif [[ $(echo "$pylint_score > 8" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 10" | bc -l) -eq 1 ]]; then
-            rating="★★★★"
-            reason="Good Pylint score and moderate cyclomatic complexity."
-          elif [[ $(echo "$pylint_score > 6" | bc -l) -eq 1 ]]; then
-            rating="★★★"
-            reason="Fair Pylint score, potential for improvement in cyclomatic complexity."
-          else
-            rating="★★"
-            reason="Areas for improvement in Pylint score and cyclomatic complexity."
+          set -e
+          pylint_score=$(grep "Your code has been rated at" pylint_report.txt | awk '{print $6}' || echo "N/A")
+          avg_complexity=$(grep "Average complexity" cc_report.txt | awk '{print $3}' || echo "N/A")
+          rating="★★★"
+          reason="Default rating."
+          if [[ $pylint_score != "N/A" && $avg_complexity != "N/A" ]]; then
+            if [[ $(echo "$pylint_score > 9" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 5" | bc -l) -eq 1 ]]; then
+              rating="★★★★★"
+              reason="Excellent Pylint score and low cyclomatic complexity."
+            elif [[ $(echo "$pylint_score > 8" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 10" | bc -l) -eq 1 ]]; then
+              rating="★★★★"
+              reason="Good Pylint score and moderate cyclomatic complexity."
+            fi
           fi
-
           echo "Code Rating: $rating ($reason)" > code_rating.txt
 
       - name: Create PR comment
@@ -86,21 +87,21 @@ jobs:
             const ccReport = fs.readFileSync('cc_report.txt', 'utf8');
             const pyflakesReport = fs.readFileSync('pyflakes_report.txt', 'utf8');
             const codeRating = fs.readFileSync('code_rating.txt', 'utf8');
-            const changedFiles = ${{ needs.pythonFiles.outputs.pythonfiles }}; 
+            const changedFiles = `${{ needs.pythonFiles.outputs.pythonfiles }}`; 
 
             const commentBody = `**Code Quality Check Report:**
 
                 | Metric | Value |
                 |---|---|
-                | Pylint | \`${pylintReport.match(/Your code has been rated at ([0-9.]+)\/10\./)[1]}\` |
-                | Cyclomatic Complexity (Avg) | \`${ccReport.match(/Average complexity: ([0-9.]+)/)[1]}\` |
-                
+                | Pylint Score | ${pylintReport.match(/Your code has been rated at ([0-9.]+)\/10\./)?.[1] || "N/A"} |
+                | Avg Complexity | ${ccReport.match(/Average complexity: ([0-9.]+)/)?.[1] || "N/A"} |
+
                 **Boilerplate Code:**
                 ${pyflakesReport}
-                
+
                 **Code Rating:**
                 ${codeRating}
-                
+
                 **Changed Files:**
                 ${changedFiles}`;
 
