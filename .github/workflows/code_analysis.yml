@@ -1,0 +1,113 @@
+name: Code Quality Check
+
+on:
+  pull_request:
+    branches: [main] # or any other branches you want to check
+
+jobs:
+  pythonFiles: # List out changed/added Python files
+    runs-on: ubuntu-latest
+    outputs:
+      pythonfiles: ${{ steps.set-python-files.outputs.pythonfiles }}
+
+    steps:
+      - name: Clone Repo
+        uses: actions/checkout@v3
+
+      - name: Get changed/added files
+        run: |
+          git fetch --no-tags --prune --depth=1 origin +refs/heads/${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
+
+      - name: Get Python files
+        id: set-python-files
+        run: |
+          run: echo "pythonfiles=$(git diff --name-only --diff-filter=ACMRT origin/${{ github.event.pull_request.base.ref }} HEAD -- '*.py' | uniq | jq -R -s -c 'split("\n")[:-1]' | jq -r '.[] | ("./" + .)' | jq -R -r -s -c 'split("\n")[:-1] | join(" ")')" >>$GITHUB_OUTPUT
+
+      - name: Print files to be scanned
+        run: echo ${{ steps.set-python-files.outputs.pythonfiles }}
+
+  Code_Analysis:
+    runs-on: ubuntu-latest
+    needs: pythonFiles
+    if: ${{ needs.pythonFiles.outputs.pythonfiles != '' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x' # Specify your desired Python version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint radon pyflakes # Install necessary libraries
+
+      - name: Analyze code
+        run: |
+          # Pylint analysis
+          pylint --fail-under=8.0 --disable=R,C --generate-reports=yes --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt
+
+          # Cyclomatic complexity analysis using Radon
+          radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt
+
+          # Boilerplate code detection using pyflakes
+          pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt
+
+      - name: Calculate code rating
+        run: |
+          # Calculate a simple code rating based on Pylint score and cyclomatic complexity
+          # You can adjust the weights and thresholds as needed
+          pylint_score=$(grep "Your code has been rated at" pylint_report.txt | awk '{print $6}')
+          avg_complexity=$(grep "Average complexity" cc_report.txt | awk '{print $3}')
+
+          if [[ $(echo "$pylint_score > 9" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 5" | bc -l) -eq 1 ]]; then
+            rating="★★★★★"
+            reason="Excellent Pylint score and low cyclomatic complexity."
+          elif [[ $(echo "$pylint_score > 8" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 10" | bc -l) -eq 1 ]]; then
+            rating="★★★★"
+            reason="Good Pylint score and moderate cyclomatic complexity."
+          elif [[ $(echo "$pylint_score > 6" | bc -l) -eq 1 ]]; then
+            rating="★★★"
+            reason="Fair Pylint score, potential for improvement in cyclomatic complexity."
+          else
+            rating="★★"
+            reason="Areas for improvement in Pylint score and cyclomatic complexity."
+          fi
+
+          echo "Code Rating: $rating ($reason)" > code_rating.txt
+
+      - name: Create PR comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const pylintReport = fs.readFileSync('pylint_report.txt', 'utf8');
+            const ccReport = fs.readFileSync('cc_report.txt', 'utf8');
+            const pyflakesReport = fs.readFileSync('pyflakes_report.txt', 'utf8');
+            const codeRating = fs.readFileSync('code_rating.txt', 'utf8');
+            const changedFiles = ${{ needs.pythonFiles.outputs.pythonfiles }}; 
+
+            const commentBody = `**Code Quality Check Report:**
+
+                | Metric | Value |
+                |---|---|
+                | Pylint | \`${pylintReport.match(/Your code has been rated at ([0-9.]+)\/10\./)[1]}\` |
+                | Cyclomatic Complexity (Avg) | \`${ccReport.match(/Average complexity: ([0-9.]+)/)[1]}\` |
+                
+                **Boilerplate Code:**
+                ${pyflakesReport}
+                
+                **Code Rating:**
+                ${codeRating}
+                
+                **Changed Files:**
+                ${changedFiles}`;
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: commentBody
+            });
