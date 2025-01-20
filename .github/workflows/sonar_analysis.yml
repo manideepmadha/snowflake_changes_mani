@@ -39,11 +39,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Wait for SonarQube to be ready
+      - name: Wait for SonarQube to Start
         run: |
           echo "Waiting for SonarQube to be ready..."
           for i in {1..30}; do
-            curl -s http://localhost:9001 && break
+            curl -s http://localhost:9001/api/system/health | grep -q '"status":"GREEN"' && break
             sleep 5
           done
 
@@ -59,7 +59,8 @@ jobs:
             -Dsonar.projectKey=my-project \
             -Dsonar.host.url=http://localhost:9001 \
             -Dsonar.login=admin \
-            -Dsonar.password=admin
+            -Dsonar.password=admin \
+            -Dsonar.verbose=true
 
       - name: Upload SonarQube Reports
         uses: actions/upload-artifact@v3
