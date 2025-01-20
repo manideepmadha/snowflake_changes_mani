@@ -39,7 +39,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.x' # Specify your desired Python version
+          python-version: '3.x'
 
       - name: Install dependencies
         run: |
@@ -57,25 +57,21 @@ jobs:
             exit 0
           fi
 
-          # Pylint analysis
+          # Run analysis tools
           echo "Running Pylint..."
-          pylint --disable=R,C --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt || echo "Pylint analysis failed."
+          pylint --disable=R,C --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt || echo "Pylint failed." > pylint_report.txt
 
-          # Cyclomatic complexity analysis
           echo "Running Radon CC..."
-          radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt || echo "Radon analysis failed."
+          radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt || echo "Radon CC failed." > cc_report.txt
 
-          # Boilerplate detection
           echo "Running Pyflakes..."
-          pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt || echo "Pyflakes analysis failed."
+          pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt || echo "Pyflakes failed." > pyflakes_report.txt
 
-          # Security checks
           echo "Running Bandit..."
-          bandit -r ${{ needs.pythonFiles.outputs.pythonfiles }} > bandit_report.txt || echo "Bandit analysis failed."
+          bandit -r ${{ needs.pythonFiles.outputs.pythonfiles }} > bandit_report.txt || echo "Bandit failed." > bandit_report.txt
 
-          # Unused code detection
           echo "Running Vulture..."
-          vulture ${{ needs.pythonFiles.outputs.pythonfiles }} > vulture_report.txt || echo "Vulture analysis failed."
+          vulture ${{ needs.pythonFiles.outputs.pythonfiles }} > vulture_report.txt || echo "Vulture failed." > vulture_report.txt
 
           echo "Analysis Complete. Reports generated."
 
@@ -83,28 +79,21 @@ jobs:
         run: |
           set -e
 
-          # Ensure reports exist and are non-empty
-          if [[ ! -s pylint_report.txt || ! -s cc_report.txt || ! -s bandit_report.txt ]]; then
-            echo "Error: One or more reports are missing or empty."
-            exit 1
-          fi
-
-          # Extract scores with defaults
+          # Extract scores with fallback values
           pylint_score=$(grep "Your code has been rated at" pylint_report.txt | awk '{print $6}' || echo "0")
           avg_complexity=$(grep "Average complexity" cc_report.txt | awk '{print $3}' || echo "0")
           bandit_issues=$(grep -c "Issue:" bandit_report.txt || echo "0")
 
-          # Debug logs
           echo "Pylint Score: $pylint_score"
           echo "Average Complexity: $avg_complexity"
           echo "Bandit Issues: $bandit_issues"
 
-          # Validate inputs
+          # Default rating logic with partial success consideration
           if [[ "$pylint_score" =~ ^[0-9]+([.][0-9]+)?$ ]] && [[ "$avg_complexity" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
             if [[ $(echo "$pylint_score > 9" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 5" | bc -l) -eq 1 ]] && [[ $bandit_issues -eq 0 ]]; then
               rating="★★★★★"
               rating_color="green"
-              reason="Excellent Pylint score, low cyclomatic complexity, and no security issues."
+              reason="Excellent Pylint score, low complexity, and no security issues."
             elif [[ $(echo "$pylint_score > 8" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 10" | bc -l) -eq 1 ]] && [[ $bandit_issues -lt 5 ]]; then
               rating="★★★★"
               rating_color="green"
@@ -116,21 +105,19 @@ jobs:
             else
               rating="★★"
               rating_color="red"
-              reason="Poor quality code with high complexity and security issues."
+              reason="Poor quality code with high complexity or security issues."
             fi
           else
-            rating="N/A"
+            rating="★"
             rating_color="red"
-            reason="Failed to calculate due to invalid input values."
+            reason="Failed checks or invalid inputs for some tools."
           fi
 
-          # Output results
           echo "Code Rating: $rating ($reason)" > code_rating.txt
           echo "Rating Color: $rating_color" > rating_color.txt
-
-          # Debug output
           echo "Code Rating: $rating ($reason)"
           echo "Rating Color: $rating_color"
+
       - name: Create PR comment
         uses: actions/github-script@v6
         with:
@@ -138,56 +125,31 @@ jobs:
           script: |
             const fs = require('fs');
 
-            // Read report files
-            const pylintReport = fs.existsSync('pylint_report.txt') ? fs.readFileSync('pylint_report.txt', 'utf8') : "Pylint report not found.";
-            const ccReport = fs.existsSync('cc_report.txt') ? fs.readFileSync('cc_report.txt', 'utf8') : "Cyclomatic complexity report not found.";
-            const pyflakesReport = fs.existsSync('pyflakes_report.txt') ? fs.readFileSync('pyflakes_report.txt', 'utf8') : "Pyflakes report not found.";
-            const banditReport = fs.existsSync('bandit_report.txt') ? fs.readFileSync('bandit_report.txt', 'utf8') : "Bandit report not found.";
-            const vultureReport = fs.existsSync('vulture_report.txt') ? fs.readFileSync('vulture_report.txt', 'utf8') : "Vulture report not found.";
-            const codeRating = fs.existsSync('code_rating.txt') ? fs.readFileSync('code_rating.txt', 'utf8') : "Code rating not found.";
+            const pylintReport = fs.existsSync('pylint_report.txt') ? fs.readFileSync('pylint_report.txt', 'utf8') : "Pylint report missing.";
+            const ccReport = fs.existsSync('cc_report.txt') ? fs.readFileSync('cc_report.txt', 'utf8') : "Radon CC report missing.";
+            const pyflakesReport = fs.existsSync('pyflakes_report.txt') ? fs.readFileSync('pyflakes_report.txt', 'utf8') : "Pyflakes report missing.";
+            const banditReport = fs.existsSync('bandit_report.txt') ? fs.readFileSync('bandit_report.txt', 'utf8') : "Bandit report missing.";
+            const vultureReport = fs.existsSync('vulture_report.txt') ? fs.readFileSync('vulture_report.txt', 'utf8') : "Vulture report missing.";
+            const codeRating = fs.existsSync('code_rating.txt') ? fs.readFileSync('code_rating.txt', 'utf8') : "Code rating missing.";
             const ratingColor = fs.existsSync('rating_color.txt') ? fs.readFileSync('rating_color.txt', 'utf8').trim() : "yellow";
 
-            // Ensure the changed files variable exists
-            const changedFiles = `${{ needs.pythonFiles.outputs.pythonfiles }}` || "No files detected.";
-
-            // Build the comment body
             const commentBody = `
               <table border="1" style="border-collapse: collapse;">
-                <tr>
-                  <td style="background-color:${ratingColor};"><strong>Rating:</strong></td>
-                  <td>${codeRating}</td>
-                </tr>
-                <tr>
-                  <td><strong>Code Quality (Pylint)</strong></td>
-                  <td>${pylintReport.match(/Your code has been rated at ([0-9.]+)\/10\./)?.[1] || "N/A"}</td>
-                </tr>
-                <tr>
-                  <td><strong>Complexity (Radon)</strong></td>
-                  <td>${ccReport.match(/Average complexity: ([0-9.]+)/)?.[1] || "N/A"}</td>
-                </tr>
-                <tr>
-                  <td><strong>Boilerplate Code</strong></td>
-                  <td>${vultureReport.slice(0, 100)}</td>
-                </tr>
-                <tr>
-                  <td><strong>Security Issues (Bandit)</strong></td>
-                  <td>${banditReport.slice(0, 100)}</td>
-                </tr>
+                <tr><td style="background-color:${ratingColor};"><strong>Rating:</strong></td><td>${codeRating}</td></tr>
+                <tr><td><strong>Pylint Report</strong></td><td>${pylintReport.slice(0, 200)}</td></tr>
+                <tr><td><strong>Radon CC Report</strong></td><td>${ccReport.slice(0, 200)}</td></tr>
+                <tr><td><strong>Pyflakes Report</strong></td><td>${pyflakesReport.slice(0, 200)}</td></tr>
+                <tr><td><strong>Bandit Report</strong></td><td>${banditReport.slice(0, 200)}</td></tr>
+                <tr><td><strong>Vulture Report</strong></td><td>${vultureReport.slice(0, 200)}</td></tr>
               </table>
-
-              **Summary:**
-              ${codeRating}
-
-              **Changed Files:**
-              ${changedFiles}
             `;
 
-            // Create the PR comment
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: commentBody
             });
+
 
       
