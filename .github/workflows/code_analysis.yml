@@ -51,38 +51,44 @@ jobs:
           set -e
           echo "Analyzing files: ${{ needs.pythonFiles.outputs.pythonfiles }}"
 
+          # Ensure the files list is not empty
+          if [[ -z "${{ needs.pythonFiles.outputs.pythonfiles }}" ]]; then
+            echo "No Python files detected for analysis."
+            exit 0
+          fi
+
           # Pylint analysis
           echo "Running Pylint..."
-          pylint --disable=R,C --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt || true
+          pylint --disable=R,C --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt || echo "Pylint analysis failed."
 
           # Cyclomatic complexity analysis
           echo "Running Radon CC..."
-          radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt || true
+          radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt || echo "Radon analysis failed."
 
           # Boilerplate detection
           echo "Running Pyflakes..."
-          pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt || true
+          pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt || echo "Pyflakes analysis failed."
 
           # Security checks
           echo "Running Bandit..."
-          bandit -r ${{ needs.pythonFiles.outputs.pythonfiles }} > bandit_report.txt || true
+          bandit -r ${{ needs.pythonFiles.outputs.pythonfiles }} > bandit_report.txt || echo "Bandit analysis failed."
 
           # Unused code detection
           echo "Running Vulture..."
-          vulture ${{ needs.pythonFiles.outputs.pythonfiles }} > vulture_report.txt || true
+          vulture ${{ needs.pythonFiles.outputs.pythonfiles }} > vulture_report.txt || echo "Vulture analysis failed."
 
           echo "Analysis Complete. Reports generated."
 
-      - name: Calculate code rating (basic example)
+      - name: Calculate code rating
         run: |
           set -e
           pylint_score=$(grep "Your code has been rated at" pylint_report.txt | awk '{print $6}' || echo "N/A")
           avg_complexity=$(grep "Average complexity" cc_report.txt | awk '{print $3}' || echo "N/A")
           bandit_issues=$(grep -c "Issue:" bandit_report.txt)
           rating="★★★"
-          rating_color="yellow" 
+          rating_color="yellow"
           reason="Default rating."
-          if [[ $pylint_score != "N/A" && $avg_complexity != "NA" ]]; then
+          if [[ $pylint_score != "N/A" && $avg_complexity != "N/A" ]]; then
             if [[ $(echo "$pylint_score > 9" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 5" | bc -l) -eq 1 ]] && [[ $bandit_issues -eq 0 ]]; then
               rating="★★★★★"
               rating_color="green"
@@ -99,8 +105,9 @@ jobs:
               rating_color="red"
             fi
           fi
-          echo "Code Rating: $rating ($reason)" > code_rating.txt
-          echo "Rating Color: $rating_color" > rating_color.txt
+          echo "$rating" > rating.txt
+          echo "$reason" > reason.txt
+          echo "$rating_color" > rating_color.txt
 
       - name: Create PR comment
         uses: actions/github-script@v6
@@ -113,8 +120,9 @@ jobs:
             const pyflakesReport = fs.readFileSync('pyflakes_report.txt', 'utf8');
             const banditReport = fs.readFileSync('bandit_report.txt', 'utf8');
             const vultureReport = fs.readFileSync('vulture_report.txt', 'utf8');
-            const codeRating = fs.readFileSync('code_rating.txt', 'utf8');
-            const ratingColor = fs.readFileSync('rating_color.txt', 'utf8');
+            const rating = fs.readFileSync('rating.txt', 'utf8').trim();
+            const reason = fs.readFileSync('reason.txt', 'utf8').trim();
+            const ratingColor = fs.readFileSync('rating_color.txt', 'utf8').trim();
             const changedFiles = `${{ needs.pythonFiles.outputs.pythonfiles }}`;
 
             const commentBody = `
@@ -133,16 +141,16 @@ jobs:
                 </tr>
                 <tr>
                   <td>**Boilerplate Code**</td>
-                  <td>${vultureReport.slice(0, 100)}</td> 
+                  <td>${pyflakesReport.slice(0, 100)}</td>
                 </tr>
                 <tr>
                   <td>**Security Issues (Bandit)**</td>
-                  <td>${banditReport.slice(0, 100)}</td> 
+                  <td>${banditReport.slice(0, 100)}</td>
                 </tr>
               </table>
 
               **Summary:**
-              ${codeRating} - ${reason}
+              ${rating} - ${reason}
 
               **Changed Files:**
               ${changedFiles}`;
@@ -153,4 +161,5 @@ jobs:
               issue_number: context.issue.number,
               body: commentBody
             });
+
       
