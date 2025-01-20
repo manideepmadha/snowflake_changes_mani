@@ -44,7 +44,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pylint radon pyflakes # Install necessary libraries
+          pip install pylint radon pyflakes bandit vulture
 
       - name: Analyze code
         run: |
@@ -63,23 +63,42 @@ jobs:
           echo "Running Pyflakes..."
           pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt || echo "Pyflakes failed."
 
-      - name: Calculate code rating
+          # Security checks
+          echo "Running Bandit..."
+          bandit -r ${{ needs.pythonFiles.outputs.pythonfiles }} > bandit_report.txt || echo "Bandit failed."
+
+          # Unused code detection
+          echo "Running Vulture..."
+          vulture ${{ needs.pythonFiles.outputs.pythonfiles }} > vulture_report.txt || echo "Vulture failed."
+
+      - name: Calculate code rating (basic example)
         run: |
           set -e
           pylint_score=$(grep "Your code has been rated at" pylint_report.txt | awk '{print $6}' || echo "N/A")
           avg_complexity=$(grep "Average complexity" cc_report.txt | awk '{print $3}' || echo "N/A")
+          bandit_issues=$(grep -c "Issue:" bandit_report.txt)
           rating="★★★"
+          rating_color="yellow" 
           reason="Default rating."
-          if [[ $pylint_score != "N/A" && $avg_complexity != "N/A" ]]; then
-            if [[ $(echo "$pylint_score > 9" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 5" | bc -l) -eq 1 ]]; then
+          if [[ $pylint_score != "N/A" && $avg_complexity != "NA" ]]; then
+            if [[ $(echo "$pylint_score > 9" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 5" | bc -l) -eq 1 ]] && [[ $bandit_issues -eq 0 ]]; then
               rating="★★★★★"
-              reason="Excellent Pylint score and low cyclomatic complexity."
-            elif [[ $(echo "$pylint_score > 8" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 10" | bc -l) -eq 1 ]]; then
+              rating_color="green"
+              reason="Excellent Pylint score, low cyclomatic complexity, and no security issues."
+            elif [[ $(echo "$pylint_score > 8" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 10" | bc -l) -eq 1 ]] && [[ $bandit_issues -lt 5 ]]; then
               rating="★★★★"
-              reason="Good Pylint score and moderate cyclomatic complexity."
+              rating_color="green"
+              reason="Good Pylint score, moderate complexity, and minor security issues."
+            elif [[ $(echo "$pylint_score > 6" | bc -l) -eq 1 ]] && [[ $bandit_issues -lt 10 ]]; then
+              rating="★★★"
+              rating_color="yellow"
+            else
+              rating="★★"
+              rating_color="red"
             fi
           fi
           echo "Code Rating: $rating ($reason)" > code_rating.txt
+          echo "Rating Color: $rating_color" > rating_color.txt
 
       - name: Create PR comment
         uses: actions/github-script@v6
@@ -90,24 +109,41 @@ jobs:
             const pylintReport = fs.readFileSync('pylint_report.txt', 'utf8');
             const ccReport = fs.readFileSync('cc_report.txt', 'utf8');
             const pyflakesReport = fs.readFileSync('pyflakes_report.txt', 'utf8');
+            const banditReport = fs.readFileSync('bandit_report.txt', 'utf8');
+            const vultureReport = fs.readFileSync('vulture_report.txt', 'utf8');
             const codeRating = fs.readFileSync('code_rating.txt', 'utf8');
-            const changedFiles = `${{ needs.pythonFiles.outputs.pythonfiles }}`; 
+            const ratingColor = fs.readFileSync('rating_color.txt', 'utf8');
+            const changedFiles = `${{ needs.pythonFiles.outputs.pythonfiles }}`;
 
-            const commentBody = `**Code Quality Check Report:**
+            const commentBody = `
+              <table border="1">
+                <tr>
+                  <td style="background-color:${ratingColor};">**Rating:**</td>
+                  <td>${rating}</td>
+                </tr>
+                <tr>
+                  <td>**Code Quality (Pylint)**</td>
+                  <td>${pylintReport.match(/Your code has been rated at ([0-9.]+)\/10\./)?.[1] || "N/A"}</td>
+                </tr>
+                <tr>
+                  <td>**Complexity (Radon)**</td>
+                  <td>${ccReport.match(/Average complexity: ([0-9.]+)/)?.[1] || "N/A"}</td>
+                </tr>
+                <tr>
+                  <td>**Boilerplate Code**</td>
+                  <td>${vultureReport.slice(0, 100)}</td> 
+                </tr>
+                <tr>
+                  <td>**Security Issues (Bandit)**</td>
+                  <td>${banditReport.slice(0, 100)}</td> 
+                </tr>
+              </table>
 
-                | Metric | Value |
-                |---|---|
-                | Pylint Score | ${pylintReport.match(/Your code has been rated at ([0-9.]+)\/10\./)?.[1] || "N/A"} |
-                | Avg Complexity | ${ccReport.match(/Average complexity: ([0-9.]+)/)?.[1] || "N/A"} |
+              **Summary:**
+              ${codeRating} - ${reason}
 
-                **Boilerplate Code:**
-                ${pyflakesReport}
-
-                **Code Rating:**
-                ${codeRating}
-
-                **Changed Files:**
-                ${changedFiles}`;
+              **Changed Files:**
+              ${changedFiles}`;
 
             github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -115,3 +151,4 @@ jobs:
               issue_number: context.issue.number,
               body: commentBody
             });
+      
