@@ -82,13 +82,25 @@ jobs:
       - name: Calculate code rating
         run: |
           set -e
-          pylint_score=$(grep "Your code has been rated at" pylint_report.txt | awk '{print $6}' || echo "N/A")
-          avg_complexity=$(grep "Average complexity" cc_report.txt | awk '{print $3}' || echo "N/A")
-          bandit_issues=$(grep -c "Issue:" bandit_report.txt)
-          rating="★★★"
-          rating_color="yellow"
-          reason="Default rating."
-          if [[ $pylint_score != "N/A" && $avg_complexity != "N/A" ]]; then
+
+          # Ensure reports exist and are non-empty
+          if [[ ! -s pylint_report.txt || ! -s cc_report.txt || ! -s bandit_report.txt ]]; then
+            echo "Error: One or more reports are missing or empty."
+            exit 1
+          fi
+
+          # Extract scores with defaults
+          pylint_score=$(grep "Your code has been rated at" pylint_report.txt | awk '{print $6}' || echo "0")
+          avg_complexity=$(grep "Average complexity" cc_report.txt | awk '{print $3}' || echo "0")
+          bandit_issues=$(grep -c "Issue:" bandit_report.txt || echo "0")
+
+          # Debug logs
+          echo "Pylint Score: $pylint_score"
+          echo "Average Complexity: $avg_complexity"
+          echo "Bandit Issues: $bandit_issues"
+
+          # Validate inputs
+          if [[ "$pylint_score" =~ ^[0-9]+([.][0-9]+)?$ ]] && [[ "$avg_complexity" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
             if [[ $(echo "$pylint_score > 9" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 5" | bc -l) -eq 1 ]] && [[ $bandit_issues -eq 0 ]]; then
               rating="★★★★★"
               rating_color="green"
@@ -100,15 +112,25 @@ jobs:
             elif [[ $(echo "$pylint_score > 6" | bc -l) -eq 1 ]] && [[ $bandit_issues -lt 10 ]]; then
               rating="★★★"
               rating_color="yellow"
+              reason="Moderate Pylint score with manageable security issues."
             else
               rating="★★"
               rating_color="red"
+              reason="Poor quality code with high complexity and security issues."
             fi
+          else
+            rating="N/A"
+            rating_color="red"
+            reason="Failed to calculate due to invalid input values."
           fi
-          echo "$rating" > rating.txt
-          echo "$reason" > reason.txt
-          echo "$rating_color" > rating_color.txt
 
+          # Output results
+          echo "Code Rating: $rating ($reason)" > code_rating.txt
+          echo "Rating Color: $rating_color" > rating_color.txt
+
+          # Debug output
+          echo "Code Rating: $rating ($reason)"
+          echo "Rating Color: $rating_color"
       - name: Create PR comment
         uses: actions/github-script@v6
         with:
