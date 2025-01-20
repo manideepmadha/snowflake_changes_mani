@@ -11,50 +11,56 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: sonar
+          POSTGRES_PASSWORD: sonar
+          POSTGRES_DB: sonarqube
+        ports:
+          - 5432:5432
+
       sonarqube:
         image: sonarqube:community
         ports:
-          - 9000:9000
+          - 9001:9000
         options: >-
-          --health-cmd='curl -f http://localhost:9000 || exit 1'
+          --health-cmd="curl -f http://localhost:9000 || exit 1"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
           --env sonar.jdbc.username=sonar
           --env sonar.jdbc.password=sonar
-          --env sonar.jdbc.url=jdbc:postgresql://localhost/sonarqube
+          --env sonar.jdbc.url=jdbc:postgresql://postgres/sonarqube
+          --memory=2g
+          --cpus=2
 
     steps:
-      # Checkout the code
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Wait for SonarQube to be ready
-      - name: Wait for SonarQube
+      - name: Wait for SonarQube to be ready
         run: |
           echo "Waiting for SonarQube to be ready..."
           for i in {1..30}; do
-            curl -s http://localhost:9000 && break
+            curl -s http://localhost:9001 && break
             sleep 5
           done
 
-      # Install SonarScanner CLI
       - name: Install SonarScanner
         run: |
           wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip
           unzip sonar-scanner-cli-4.8.0.2856-linux.zip -d $HOME
           echo "$HOME/sonar-scanner-4.8.0.2856-linux/bin" >> $GITHUB_PATH
 
-      # Run SonarScanner
       - name: Run SonarScanner
         run: |
           sonar-scanner \
             -Dsonar.projectKey=my-project \
-            -Dsonar.host.url=http://localhost:9000 \
+            -Dsonar.host.url=http://localhost:9001 \
             -Dsonar.login=admin \
             -Dsonar.password=admin
 
-      # Save the reports
       - name: Upload SonarQube Reports
         uses: actions/upload-artifact@v3
         with:
