@@ -53,23 +53,25 @@ jobs:
 
           # Pylint analysis
           echo "Running Pylint..."
-          pylint --disable=R,C --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt || echo "Pylint failed."
+          pylint --disable=R,C --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt || true
 
           # Cyclomatic complexity analysis
           echo "Running Radon CC..."
-          radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt || echo "Radon failed."
+          radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt || true
 
           # Boilerplate detection
           echo "Running Pyflakes..."
-          pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt || echo "Pyflakes failed."
+          pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt || true
 
           # Security checks
           echo "Running Bandit..."
-          bandit -r ${{ needs.pythonFiles.outputs.pythonfiles }} > bandit_report.txt || echo "Bandit failed."
+          bandit -r ${{ needs.pythonFiles.outputs.pythonfiles }} > bandit_report.txt || true
 
           # Unused code detection
           echo "Running Vulture..."
-          vulture ${{ needs.pythonFiles.outputs.pythonfiles }} > vulture_report.txt || echo "Vulture failed."
+          vulture ${{ needs.pythonFiles.outputs.pythonfiles }} > vulture_report.txt || true
+
+          echo "Analysis Complete. Reports generated."
 
       - name: Calculate code rating (basic example)
         run: |
