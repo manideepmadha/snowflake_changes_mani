@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  pull_request:
 
 jobs:
   sonarqube-analysis:
@@ -24,19 +25,25 @@ jobs:
         ports:
           - 9001:9000
         options: >-
+          --health-cmd="curl -f http://localhost:9000 || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
           --env sonar.jdbc.username=sonar
           --env sonar.jdbc.password=sonar
           --env sonar.jdbc.url=jdbc:postgresql://postgres/sonarqube
+          --memory=2g
+          --cpus=2
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Wait for SonarQube to Start
+      - name: Wait for SonarQube to be ready
         run: |
           echo "Waiting for SonarQube to be ready..."
           for i in {1..30}; do
-            curl -s http://localhost:9001/api/system/health | grep -q '"status":"GREEN"' && break
+            curl -s http://localhost:9001 && break
             sleep 5
           done
 
@@ -52,8 +59,7 @@ jobs:
             -Dsonar.projectKey=my-project \
             -Dsonar.host.url=http://localhost:9001 \
             -Dsonar.login=admin \
-            -Dsonar.password=admin \
-            -Dsonar.verbose=true
+            -Dsonar.password=admin
 
       - name: Upload SonarQube Reports
         uses: actions/upload-artifact@v3
