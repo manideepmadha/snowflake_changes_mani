@@ -137,46 +137,52 @@ jobs:
           token: ${{ secrets.PAT_GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const pylintReport = fs.readFileSync('pylint_report.txt', 'utf8');
-            const ccReport = fs.readFileSync('cc_report.txt', 'utf8');
-            const pyflakesReport = fs.readFileSync('pyflakes_report.txt', 'utf8');
-            const banditReport = fs.readFileSync('bandit_report.txt', 'utf8');
-            const vultureReport = fs.readFileSync('vulture_report.txt', 'utf8');
-            const rating = fs.readFileSync('rating.txt', 'utf8').trim();
-            const reason = fs.readFileSync('reason.txt', 'utf8').trim();
-            const ratingColor = fs.readFileSync('rating_color.txt', 'utf8').trim();
-            const changedFiles = `${{ needs.pythonFiles.outputs.pythonfiles }}`;
 
+            // Read report files
+            const pylintReport = fs.existsSync('pylint_report.txt') ? fs.readFileSync('pylint_report.txt', 'utf8') : "Pylint report not found.";
+            const ccReport = fs.existsSync('cc_report.txt') ? fs.readFileSync('cc_report.txt', 'utf8') : "Cyclomatic complexity report not found.";
+            const pyflakesReport = fs.existsSync('pyflakes_report.txt') ? fs.readFileSync('pyflakes_report.txt', 'utf8') : "Pyflakes report not found.";
+            const banditReport = fs.existsSync('bandit_report.txt') ? fs.readFileSync('bandit_report.txt', 'utf8') : "Bandit report not found.";
+            const vultureReport = fs.existsSync('vulture_report.txt') ? fs.readFileSync('vulture_report.txt', 'utf8') : "Vulture report not found.";
+            const codeRating = fs.existsSync('code_rating.txt') ? fs.readFileSync('code_rating.txt', 'utf8') : "Code rating not found.";
+            const ratingColor = fs.existsSync('rating_color.txt') ? fs.readFileSync('rating_color.txt', 'utf8').trim() : "yellow";
+
+            // Ensure the changed files variable exists
+            const changedFiles = `${{ needs.pythonFiles.outputs.pythonfiles }}` || "No files detected.";
+
+            // Build the comment body
             const commentBody = `
-              <table border="1">
+              <table border="1" style="border-collapse: collapse;">
                 <tr>
-                  <td style="background-color:${ratingColor};">**Rating:**</td>
-                  <td>${rating}</td>
+                  <td style="background-color:${ratingColor};"><strong>Rating:</strong></td>
+                  <td>${codeRating}</td>
                 </tr>
                 <tr>
-                  <td>**Code Quality (Pylint)**</td>
+                  <td><strong>Code Quality (Pylint)</strong></td>
                   <td>${pylintReport.match(/Your code has been rated at ([0-9.]+)\/10\./)?.[1] || "N/A"}</td>
                 </tr>
                 <tr>
-                  <td>**Complexity (Radon)**</td>
+                  <td><strong>Complexity (Radon)</strong></td>
                   <td>${ccReport.match(/Average complexity: ([0-9.]+)/)?.[1] || "N/A"}</td>
                 </tr>
                 <tr>
-                  <td>**Boilerplate Code**</td>
-                  <td>${pyflakesReport.slice(0, 100)}</td>
+                  <td><strong>Boilerplate Code</strong></td>
+                  <td>${vultureReport.slice(0, 100)}</td>
                 </tr>
                 <tr>
-                  <td>**Security Issues (Bandit)**</td>
+                  <td><strong>Security Issues (Bandit)</strong></td>
                   <td>${banditReport.slice(0, 100)}</td>
                 </tr>
               </table>
 
               **Summary:**
-              ${rating} - ${reason}
+              ${codeRating}
 
               **Changed Files:**
-              ${changedFiles}`;
+              ${changedFiles}
+            `;
 
+            // Create the PR comment
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
