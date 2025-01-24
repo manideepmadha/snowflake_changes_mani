@@ -39,46 +39,84 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.x' # Specify your desired Python version
+          python-version: '3.x'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pylint radon pyflakes # Install necessary libraries
+          pip install pylint radon pyflakes bandit vulture
 
       - name: Analyze code
         run: |
-          # Pylint analysis
-          pylint --fail-under=8.0 --disable=R,C --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt
+          set -e
+          echo "Analyzing files: ${{ needs.pythonFiles.outputs.pythonfiles }}"
 
-          # Cyclomatic complexity analysis using Radon
-          radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt
+          # Ensure the files list is not empty
+          if [[ -z "${{ needs.pythonFiles.outputs.pythonfiles }}" ]]; then
+            echo "No Python files detected for analysis."
+            exit 0
+          fi
 
-          # Boilerplate code detection using pyflakes
-          pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt
+          # Run analysis tools
+          echo "Running Pylint..."
+          pylint --disable=R,C --output-format=text ${{ needs.pythonFiles.outputs.pythonfiles }} > pylint_report.txt || echo "Pylint failed." > pylint_report.txt
+
+          echo "Running Radon CC..."
+          radon cc ${{ needs.pythonFiles.outputs.pythonfiles }} > cc_report.txt || echo "Radon CC failed." > cc_report.txt
+
+          echo "Running Pyflakes..."
+          pyflakes ${{ needs.pythonFiles.outputs.pythonfiles }} > pyflakes_report.txt || echo "Pyflakes failed." > pyflakes_report.txt
+
+          echo "Running Bandit..."
+          bandit -r ${{ needs.pythonFiles.outputs.pythonfiles }} > bandit_report.txt || echo "Bandit failed." > bandit_report.txt
+
+          echo "Running Vulture..."
+          vulture ${{ needs.pythonFiles.outputs.pythonfiles }} > vulture_report.txt || echo "Vulture failed." > vulture_report.txt
+
+          echo "Analysis Complete. Reports generated."
 
       - name: Calculate code rating
         run: |
-          # Calculate a simple code rating based on Pylint score and cyclomatic complexity
-          # You can adjust the weights and thresholds as needed
-          pylint_score=$(grep "Your code has been rated at" pylint_report.txt | awk '{print $6}')
-          avg_complexity=$(grep "Average complexity" cc_report.txt | awk '{print $3}')
+          set -e
 
-          if [[ $(echo "$pylint_score > 9" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 5" | bc -l) -eq 1 ]]; then
-            rating="★★★★★"
-            reason="Excellent Pylint score and low cyclomatic complexity."
-          elif [[ $(echo "$pylint_score > 8" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 10" | bc -l) -eq 1 ]]; then
-            rating="★★★★"
-            reason="Good Pylint score and moderate cyclomatic complexity."
-          elif [[ $(echo "$pylint_score > 6" | bc -l) -eq 1 ]]; then
-            rating="★★★"
-            reason="Fair Pylint score, potential for improvement in cyclomatic complexity."
+          # Extract scores with fallback values
+          pylint_score=$(grep "Your code has been rated at" pylint_report.txt | awk '{print $6}' || echo "0")
+          avg_complexity=$(grep "Average complexity" cc_report.txt | awk '{print $3}' || echo "0")
+          bandit_issues=$(grep -c "Issue:" bandit_report.txt || echo "0")
+
+          echo "Pylint Score: $pylint_score"
+          echo "Average Complexity: $avg_complexity"
+          echo "Bandit Issues: $bandit_issues"
+
+          # Default rating logic with partial success consideration
+          if [[ "$pylint_score" =~ ^[0-9]+([.][0-9]+)?$ ]] && [[ "$avg_complexity" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+            if [[ $(echo "$pylint_score > 9" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 5" | bc -l) -eq 1 ]] && [[ $bandit_issues -eq 0 ]]; then
+              rating="★★★★★"
+              rating_color="green"
+              reason="Excellent Pylint score, low complexity, and no security issues."
+            elif [[ $(echo "$pylint_score > 8" | bc -l) -eq 1 ]] && [[ $(echo "$avg_complexity < 10" | bc -l) -eq 1 ]] && [[ $bandit_issues -lt 5 ]]; then
+              rating="★★★★"
+              rating_color="green"
+              reason="Good Pylint score, moderate complexity, and minor security issues."
+            elif [[ $(echo "$pylint_score > 6" | bc -l) -eq 1 ]] && [[ $bandit_issues -lt 10 ]]; then
+              rating="★★★"
+              rating_color="yellow"
+              reason="Moderate Pylint score with manageable security issues."
+            else
+              rating="★★"
+              rating_color="red"
+              reason="Poor quality code with high complexity or security issues."
+            fi
           else
-            rating="★★"
-            reason="Areas for improvement in Pylint score and cyclomatic complexity."
+            rating="★"
+            rating_color="red"
+            reason="Failed checks or invalid inputs for some tools."
           fi
 
           echo "Code Rating: $rating ($reason)" > code_rating.txt
+          echo "Rating Color: $rating_color" > rating_color.txt
+          echo "Code Rating: $rating ($reason)"
+          echo "Rating Color: $rating_color"
 
       - name: Create PR comment
         uses: actions/github-script@v6
@@ -86,27 +124,25 @@ jobs:
           token: ${{ secrets.PAT_GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const pylintReport = fs.readFileSync('pylint_report.txt', 'utf8');
-            const ccReport = fs.readFileSync('cc_report.txt', 'utf8');
-            const pyflakesReport = fs.readFileSync('pyflakes_report.txt', 'utf8');
-            const codeRating = fs.readFileSync('code_rating.txt', 'utf8');
-            const changedFiles = ${{ needs.pythonFiles.outputs.pythonfiles }}; 
 
-            const commentBody = `**Code Quality Check Report:**
+            const pylintReport = fs.existsSync('pylint_report.txt') ? fs.readFileSync('pylint_report.txt', 'utf8') : "Pylint report missing.";
+            const ccReport = fs.existsSync('cc_report.txt') ? fs.readFileSync('cc_report.txt', 'utf8') : "Radon CC report missing.";
+            const pyflakesReport = fs.existsSync('pyflakes_report.txt') ? fs.readFileSync('pyflakes_report.txt', 'utf8') : "Pyflakes report missing.";
+            const banditReport = fs.existsSync('bandit_report.txt') ? fs.readFileSync('bandit_report.txt', 'utf8') : "Bandit report missing.";
+            const vultureReport = fs.existsSync('vulture_report.txt') ? fs.readFileSync('vulture_report.txt', 'utf8') : "Vulture report missing.";
+            const codeRating = fs.existsSync('code_rating.txt') ? fs.readFileSync('code_rating.txt', 'utf8') : "Code rating missing.";
+            const ratingColor = fs.existsSync('rating_color.txt') ? fs.readFileSync('rating_color.txt', 'utf8').trim() : "yellow";
 
-                | Metric | Value |
-                |---|---|
-                | Pylint | \`${pylintReport.match(/Your code has been rated at ([0-9.]+)\/10\./)[1]}\` |
-                | Cyclomatic Complexity (Avg) | \`${ccReport.match(/Average complexity: ([0-9.]+)/)[1]}\` |
-                
-                **Boilerplate Code:**
-                ${pyflakesReport}
-                
-                **Code Rating:**
-                ${codeRating}
-                
-                **Changed Files:**
-                ${changedFiles}`;
+            const commentBody = `
+              <table border="1" style="border-collapse: collapse;">
+                <tr><td style="background-color:${ratingColor};"><strong>Rating:</strong></td><td>${codeRating}</td></tr>
+                <tr><td><strong>Pylint Report</strong></td><td>${pylintReport.slice(0, 200)}</td></tr>
+                <tr><td><strong>Radon CC Report</strong></td><td>${ccReport.slice(0, 200)}</td></tr>
+                <tr><td><strong>Pyflakes Report</strong></td><td>${pyflakesReport.slice(0, 200)}</td></tr>
+                <tr><td><strong>Bandit Report</strong></td><td>${banditReport.slice(0, 200)}</td></tr>
+                <tr><td><strong>Vulture Report</strong></td><td>${vultureReport.slice(0, 200)}</td></tr>
+              </table>
+            `;
 
             github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -114,3 +150,6 @@ jobs:
               issue_number: context.issue.number,
               body: commentBody
             });
+
+
+      
